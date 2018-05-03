@@ -10,6 +10,9 @@ Welcome to chime-sensitivity's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+.. automodule:: snr_estimator
+.. automodule:: chime_exposure_map
+
 
 
 Indices and tables
