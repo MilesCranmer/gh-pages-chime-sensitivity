@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # chime-sensitivity documentation build configuration file, created by
-# sphinx-quickstart on Thu May  3 18:03:27 2018.
+# sphinx-quickstart on Thu May  3 18:22:36 2018.
 #
 # This file is execfile()d with the current directory set to its
 # containing dir.
