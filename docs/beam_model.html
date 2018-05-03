@@ -1,0 +1,383 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>beam_model module &#8212; chime-sensitivity 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-beam_model">
+<span id="beam-model-module"></span><h1>beam_model module<a class="headerlink" href="#module-beam_model" title="Permalink to this headline">¶</a></h1>
+<p>Provides a description of the synthesized CHIME beams.</p>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>To load beam model as per the current pipeline confiuration:</p>
+<p><code class="docutils literal"><span class="pre">`</span>
+<span class="pre">from</span> <span class="pre">frb_L2_L3</span> <span class="pre">import</span> <span class="pre">beam_model</span>
+<span class="pre">beammod</span> <span class="pre">=</span> <span class="pre">beam_model.current_model_class(beam_model.current_config)</span>
+<span class="pre">`</span></code></p>
+<p>Then do things with <cite>beammod</cite> to your hearts content.</p>
+<dl class="class">
+<dt id="beam_model.BeamModel">
+<em class="property">class </em><code class="descclassname">beam_model.</code><code class="descname">BeamModel</code><span class="sig-paren">(</span><em>config</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beam_model.html#BeamModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beam_model.BeamModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Provides a description of the synthesized CHIME beams.</p>
+<dl class="docutils">
+<dt>config <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd>A dictionary of any configuration parameters needed in the beam model.</dd>
+</dl>
+<dl class="method">
+<dt id="beam_model.BeamModel.get_array_indices_for_beams">
+<code class="descname">get_array_indices_for_beams</code><span class="sig-paren">(</span><em>beam_ids</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beam_model.html#BeamModel.get_array_indices_for_beams"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beam_model.BeamModel.get_array_indices_for_beams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a list of beam_ids return the index in the all_offsets array
+for those beams.</p>
+<dl class="docutils">
+<dt>beam_ids <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>An array of beam_ids of length N.</dd>
+</dl>
+<dl class="docutils">
+<dt>ndarray</dt>
+<dd>An array of indices.</dd>
+</dl>
+<p>This does seem a bit inelegant. Also, should stop using “offsets”;
+use “positions” or “beam_postions” instead, its less confusing.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="beam_model.BeamModel.get_beam_positions">
+<code class="descname">get_beam_positions</code><span class="sig-paren">(</span><em>beam_ids</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beam_model.html#BeamModel.get_beam_positions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beam_model.BeamModel.get_beam_positions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a list of beam_ids return the <code class="docutils literal"><span class="pre">[x,</span> <span class="pre">y]</span></code> positions of those beams.</p>
+<dl class="docutils">
+<dt>beam_ids <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>An array of beam_ids of length N.</dd>
+</dl>
+<dl class="docutils">
+<dt>ndarray</dt>
+<dd>An array of positions for each beam_id, has shape (N,2)</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="beam_model.BeamModel.get_beam_widths">
+<code class="descname">get_beam_widths</code><span class="sig-paren">(</span><em>beams</em>, <em>freq</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beam_model.html#BeamModel.get_beam_widths"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beam_model.BeamModel.get_beam_widths" title="Permalink to this definition">¶</a></dt>
+<dd><p>For a list of beam IDs return the N/S and E/W beam widths.</p>
+<dl class="docutils">
+<dt>beams <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>IDs for the beams for which to calculate sensitivities.
+Has shape (N).</dd>
+<dt>freqs: float or array_like</dt>
+<dd>Frequency(ies) in MHz.
+Has shape (K).</dd>
+</dl>
+<dl class="docutils">
+<dt>ndarray</dt>
+<dd>Beam width in <a href="#id1"><span class="problematic" id="id2">``</span></a>x’’ (E/W) and <a href="#id3"><span class="problematic" id="id4">``</span></a>y’’ (N/S) for each beam and frequency.
+Has shape (N,K,2).</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="beam_model.BeamModel.get_equatorial_from_position">
+<code class="descname">get_equatorial_from_position</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>time</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beam_model.html#BeamModel.get_equatorial_from_position"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beam_model.BeamModel.get_equatorial_from_position" title="Permalink to this definition">¶</a></dt>
+<dd><p>For a position x, y in the beam grid return the RA and Dec</p>
+<dl class="docutils">
+<dt>x <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><code class="docutils literal"><span class="pre">x</span></code> position in coordinate grid.</dd>
+<dt>y <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><code class="docutils literal"><span class="pre">y</span></code> position in coordinate grid.</dd>
+<dt>time <span class="classifier-delimiter">:</span> <span class="classifier">datetime object or astropy.Time object</span></dt>
+<dd>Time at observatory to perform transform.</dd>
+</dl>
+<dl class="docutils">
+<dt>ra <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>Right ascension in celestial coordinates.</dd>
+<dt>dec <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>Declination in celestial coordinates.</dd>
+</dl>
+<p>In this base class these translations assume the beam grid laid out in
+the beam model sphinx doc. If a beam model uses a different convention
+this function will need to be overridden.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="beam_model.BeamModel.get_position_from_equatorial">
+<code class="descname">get_position_from_equatorial</code><span class="sig-paren">(</span><em>ra_deg</em>, <em>dec_deg</em>, <em>time</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beam_model.html#BeamModel.get_position_from_equatorial"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beam_model.BeamModel.get_position_from_equatorial" title="Permalink to this definition">¶</a></dt>
+<dd><p>For a position x, y in the beam grid return the RA and Dec</p>
+<dl class="docutils">
+<dt>ra_deg <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>Right ascension in celestial coordinates in degrees.</dd>
+<dt>dec_deg <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>Declination in celestial coordinates in degrees.</dd>
+<dt>time <span class="classifier-delimiter">:</span> <span class="classifier">datetime object or astropy.Time object</span></dt>
+<dd>Time at observatory to perform transform.</dd>
+</dl>
+<dl class="docutils">
+<dt>x <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><code class="docutils literal"><span class="pre">x</span></code> position in coordinate grid.</dd>
+<dt>y <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><code class="docutils literal"><span class="pre">y</span></code> position in coordinate grid.</dd>
+</dl>
+<p>In this base class these translations assume the beam grid laid out in
+the beam model sphinx doc. If a beam model uses a different convention
+this function will need to be overridden.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="beam_model.BeamModel.get_sensitivity">
+<code class="descname">get_sensitivity</code><span class="sig-paren">(</span><em>beams</em>, <em>positions</em>, <em>freqs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beam_model.html#BeamModel.get_sensitivity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beam_model.BeamModel.get_sensitivity" title="Permalink to this definition">¶</a></dt>
+<dd><p>For a list of beam IDs return the sensitivites for a list of positions.</p>
+<dl class="docutils">
+<dt>beams <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>IDs for the beams for which to calculate sensitivities.
+Has shape (N).</dd>
+<dt>positions <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>Positions in <code class="docutils literal"><span class="pre">x</span></code> and <code class="docutils literal"><span class="pre">y</span></code> coordinates in degrees.
+Has shape (M,2).
+See beam model doc for coordinate description.</dd>
+<dt>freqs: array_like</dt>
+<dd>Frequencies in MHz.
+Has shape (K).</dd>
+</dl>
+<dl class="docutils">
+<dt>ndarray</dt>
+<dd>Relative sensitivities for each beam and position. The on-axis
+sensitivity is 1. Has shape (M,N,K).</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="beam_model.EvenSincBeamModel">
+<em class="property">class </em><code class="descclassname">beam_model.</code><code class="descname">EvenSincBeamModel</code><span class="sig-paren">(</span><em>config</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beam_model.html#EvenSincBeamModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beam_model.EvenSincBeamModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beam_model.BeamModel" title="beam_model.BeamModel"><code class="xref py py-class docutils literal"><span class="pre">beam_model.BeamModel</span></code></a></p>
+<p>An idealized beam model with evenly spaced <code class="docutils literal"><span class="pre">sinc**2</span></code> functions for each beam.</p>
+<dl class="docutils">
+<dt>config <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd>A dictionary containing: ‘beam_sep’, ‘Nx’, Ny’.</dd>
+</dl>
+<dl class="method">
+<dt id="beam_model.EvenSincBeamModel.get_beam_widths">
+<code class="descname">get_beam_widths</code><span class="sig-paren">(</span><em>beams</em>, <em>freq</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beam_model.html#EvenSincBeamModel.get_beam_widths"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beam_model.EvenSincBeamModel.get_beam_widths" title="Permalink to this definition">¶</a></dt>
+<dd><p>For a list of beam IDs return the N/S and E/W beam widths.</p>
+<dl class="docutils">
+<dt>beams <span class="classifier-delimiter">:</span> <span class="classifier">int or array_like</span></dt>
+<dd>IDs for the beams for which to calculate sensitivities.
+Has shape (N).</dd>
+<dt>freq: float or array_like</dt>
+<dd>Frequency(ies) in MHz.
+Has shape (K).</dd>
+</dl>
+<dl class="docutils">
+<dt>ndarray</dt>
+<dd>Beam width in <a href="#id5"><span class="problematic" id="id6">``</span></a>x’’ (E/W) and <a href="#id7"><span class="problematic" id="id8">``</span></a>y’’ (N/S) for each beam and frequency.
+Has shape (N,K,2).</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="beam_model.EvenSincBeamModel.get_sensitivity">
+<code class="descname">get_sensitivity</code><span class="sig-paren">(</span><em>beams</em>, <em>positions</em>, <em>freqs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beam_model.html#EvenSincBeamModel.get_sensitivity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beam_model.EvenSincBeamModel.get_sensitivity" title="Permalink to this definition">¶</a></dt>
+<dd><p>For a list of beam IDs return the sensitivites for a list of positions.</p>
+<dl class="docutils">
+<dt>beams <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>IDs for the beams for which to calculate sensitivities.
+Has shape (N).</dd>
+<dt>positions <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>Positions in <code class="docutils literal"><span class="pre">x</span></code> and <code class="docutils literal"><span class="pre">y</span></code> coordinates in degrees.
+Has shape (M,2).
+See beam model doc for coordinate description.</dd>
+<dt>freqs: array_like</dt>
+<dd>Frequencies in MHz.
+Has shape (K).</dd>
+</dl>
+<dl class="docutils">
+<dt>ndarray</dt>
+<dd>Relative sensitivities for each beam and position. The on-axis
+sensitivity is 1. Has shape (M,N,K).</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="beam_model.FFTFormedSincBeamModel">
+<em class="property">class </em><code class="descclassname">beam_model.</code><code class="descname">FFTFormedSincBeamModel</code><span class="sig-paren">(</span><em>config</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beam_model.html#FFTFormedSincBeamModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beam_model.FFTFormedSincBeamModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beam_model.BeamModel" title="beam_model.BeamModel"><code class="xref py py-class docutils literal"><span class="pre">beam_model.BeamModel</span></code></a></p>
+<p>An beam model with <code class="docutils literal"><span class="pre">sinc**2</span></code> functions spaced evenly in sin(y) and evenly
+in x. Takes into account:</p>
+<ul class="simple">
+<li>Spacing in sin(y) as provided by FFT beamforming</li>
+<li>Elongation of beam as it approaches horizon</li>
+<li>Frequency dependant beam centers and how they are clamped</li>
+</ul>
+<dl class="docutils">
+<dt>config <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><dl class="first docutils">
+<dt>A dictionary containing: ‘beam_sep_x’, ‘feed_sep’, ‘Nx’, Ny’,</dt>
+<dd>‘clamp_pad’, ‘clamp_tile’, ‘clamp_freq’</dd>
+</dl>
+<p>‘beam_sep_x’ : separation in degress of E-W beams
+‘feed_sep’ : physical N-S separation of feeds in meters
+‘Nx’ : number of E-W beam columns
+‘Ny’ : number of N-S beam rows
+‘clamp_pad’ : Factor that the FFT is padded in beam forming
+‘clamp_tile’ : Factor that the FFT is extended beyond Nyquist freq.
+‘clamp_freq’ : Frequency at which reference angles to clamp to are</p>
+<blockquote class="last">
+<div>determined.</div></blockquote>
+</dd>
+</dl>
+<dl class="method">
+<dt id="beam_model.FFTFormedSincBeamModel.get_beam_positions">
+<code class="descname">get_beam_positions</code><span class="sig-paren">(</span><em>beam_ids</em>, <em>freqs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beam_model.html#FFTFormedSincBeamModel.get_beam_positions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beam_model.FFTFormedSincBeamModel.get_beam_positions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a list of beam_ids return the <code class="docutils literal"><span class="pre">[x,</span> <span class="pre">y]</span></code> positions of those beams.</p>
+<dl class="docutils">
+<dt>beam_ids <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>An array of beam_ids of length N.</dd>
+<dt>freqs <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>An array of frequencies at which to calculate beam positions.
+Has length M.</dd>
+</dl>
+<dl class="docutils">
+<dt>ndarray</dt>
+<dd>NxMx2 array of positions for each beam_id, and frequency.</dd>
+</dl>
+<p><a href="#id9"><span class="problematic" id="id10">`</span></a>beam_id`s outside of the beam grid will get position [0,0].</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="beam_model.FFTFormedSincBeamModel.get_beam_widths">
+<code class="descname">get_beam_widths</code><span class="sig-paren">(</span><em>beams</em>, <em>freq</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beam_model.html#FFTFormedSincBeamModel.get_beam_widths"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beam_model.FFTFormedSincBeamModel.get_beam_widths" title="Permalink to this definition">¶</a></dt>
+<dd><p>For a list of beam IDs return the N/S and E/W beam widths.</p>
+<dl class="docutils">
+<dt>beams <span class="classifier-delimiter">:</span> <span class="classifier">int or array_like</span></dt>
+<dd>IDs for the beams for which to calculate sensitivities.
+Has shape (N).</dd>
+<dt>freq: float or array_like</dt>
+<dd>Frequency(ies) in MHz.
+Has shape (K).</dd>
+</dl>
+<dl class="docutils">
+<dt>ndarray</dt>
+<dd>Beam width in <a href="#id11"><span class="problematic" id="id12">``</span></a>x’’ (E/W) and <a href="#id13"><span class="problematic" id="id14">``</span></a>y’’ (N/S) for each beam and frequency.
+Has shape (N,K,2).</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="beam_model.FFTFormedSincBeamModel.get_sensitivity">
+<code class="descname">get_sensitivity</code><span class="sig-paren">(</span><em>beams</em>, <em>positions</em>, <em>freqs</em>, <em>beam_positions</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beam_model.html#FFTFormedSincBeamModel.get_sensitivity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beam_model.FFTFormedSincBeamModel.get_sensitivity" title="Permalink to this definition">¶</a></dt>
+<dd><p>For a list of beam IDs return the sensitivities for a list of positions.</p>
+<dl class="docutils">
+<dt>beams <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>IDs for the beams for which to calculate sensitivities.
+Has shape (N).</dd>
+<dt>positions <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>Positions in <code class="docutils literal"><span class="pre">x</span></code> and <code class="docutils literal"><span class="pre">y</span></code> coordinates in degrees.
+Has shape (M,2).
+See beam model doc for coordinate description.</dd>
+<dt>freqs: array_like</dt>
+<dd>Frequencies in MHz.
+Has shape (K).</dd>
+</dl>
+<dl class="docutils">
+<dt>ndarray</dt>
+<dd>Relative sensitivities for each beam and position. The on-axis
+sensitivity is 1. Has shape (M,N,K).</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">chime-sensitivity</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Miles Cranmer, CHIME/FRB Collaboration.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/beam_model.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

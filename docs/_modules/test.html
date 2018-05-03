@@ -1,0 +1,400 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>test &#8212; chime-sensitivity 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for test</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; This file contains unit tests for beam exposure calculations</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">unittest</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">ephem</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">chime_exposure_map</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">generate_chime_ephem</span><span class="p">,</span>
+    <span class="n">query_location_az_alt</span><span class="p">,</span>
+    <span class="n">exposure_lightcurve</span><span class="p">,</span>
+    <span class="n">generate_exposure_map</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">common_pulsars</span> <span class="k">import</span> <span class="n">get_pulsar</span>
+<span class="kn">from</span> <span class="nn">snr_estimator</span> <span class="k">import</span> <span class="n">expected_snr_curve_pulsar</span>
+<span class="kn">from</span> <span class="nn">beam_model</span> <span class="k">import</span> <span class="n">BeamModel</span><span class="p">,</span> <span class="n">FFTFormedSincBeamModel</span>
+
+<span class="n">BEAM_MODEL_CONFIG</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;Nx&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>                   <span class="c1"># int; number of EW beams</span>
+    <span class="s2">&quot;Ny&quot;</span><span class="p">:</span> <span class="mi">256</span><span class="p">,</span>                 <span class="c1"># int; number of NS beams</span>
+    <span class="s2">&quot;beam_sep_x&quot;</span><span class="p">:</span> <span class="mf">0.44762783103</span><span class="p">,</span> <span class="c1"># float; EW beam separation in degrees</span>
+    <span class="s2">&quot;feed_sep&quot;</span><span class="p">:</span> <span class="mf">0.3048</span><span class="p">,</span> <span class="c1"># float; Physical feed separation in meters</span>
+    <span class="s2">&quot;clamp_pad&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="c1"># int; Padding factor used in clamping</span>
+    <span class="s2">&quot;clamp_tile&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="c1"># int; Tiling factor used in clamping</span>
+    <span class="s2">&quot;clamp_freq&quot;</span><span class="p">:</span> <span class="mf">495.</span><span class="p">}</span> <span class="c1"># int; Frequency for reference beams used in clamping</span>
+
+<div class="viewcode-block" id="ExposureTest"><a class="viewcode-back" href="../test.html#test.ExposureTest">[docs]</a><span class="k">class</span> <span class="nc">ExposureTest</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Test all aspects of exposure calculations &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="ExposureTest.test_chime_ephem_sunrise"><a class="viewcode-back" href="../test.html#test.ExposureTest.test_chime_ephem_sunrise">[docs]</a>    <span class="k">def</span> <span class="nf">test_chime_ephem_sunrise</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Assert that the observer object has valid sunrise time &quot;&quot;&quot;</span>
+        <span class="n">chime_telescope_observer</span> <span class="o">=</span> <span class="n">generate_chime_ephem</span><span class="p">()</span>
+        <span class="n">chime_telescope_observer</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="s1">&#39;2018/1/18&#39;</span>
+
+        <span class="c1"># Check if sunrise is correct</span>
+        <span class="n">sun_location</span> <span class="o">=</span> <span class="n">ephem</span><span class="o">.</span><span class="n">Sun</span><span class="p">()</span>
+        <span class="n">sun_location</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">chime_telescope_observer</span><span class="p">)</span>
+        <span class="n">sunrise_time_utc</span> <span class="o">=</span> <span class="n">chime_telescope_observer</span><span class="o">.</span><span class="n">previous_rising</span><span class="p">(</span>
+            <span class="n">sun_location</span><span class="p">)</span>
+        <span class="n">sunrise_time_pst</span> <span class="o">=</span> <span class="n">ephem</span><span class="o">.</span><span class="n">Date</span><span class="p">(</span>
+            <span class="n">ephem</span><span class="o">.</span><span class="n">Date</span><span class="p">(</span><span class="n">sunrise_time_utc</span> <span class="o">-</span> <span class="mi">8</span><span class="o">*</span><span class="n">ephem</span><span class="o">.</span><span class="n">hour</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">sunrise_time_pst</span><span class="p">)[</span><span class="mi">10</span><span class="p">:</span><span class="mi">15</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;07:46&#39;</span>
+            <span class="p">)</span></div>
+<div class="viewcode-block" id="ExposureTest.test_chime_coordinate_azalt"><a class="viewcode-back" href="../test.html#test.ExposureTest.test_chime_coordinate_azalt">[docs]</a>    <span class="k">def</span> <span class="nf">test_chime_coordinate_azalt</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Compute az, alt for an ra, dec &quot;&quot;&quot;</span>
+        <span class="n">date</span> <span class="o">=</span> <span class="s1">&#39;2018/1/26 01:24:00&#39;</span>
+        <span class="n">ra_canonical</span> <span class="o">=</span> <span class="n">ephem</span><span class="o">.</span><span class="n">hours</span><span class="p">(</span><span class="s1">&#39;00:00:00&#39;</span><span class="p">)</span>
+        <span class="n">dec_canonical</span> <span class="o">=</span> <span class="n">ephem</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="s1">&#39;00:00:00&#39;</span><span class="p">)</span>
+
+        <span class="n">expected_az</span> <span class="o">=</span> <span class="mf">213.53</span>
+        <span class="n">expected_alt</span> <span class="o">=</span> <span class="mf">35.62</span>
+
+        <span class="n">test_az</span><span class="p">,</span> <span class="n">test_alt</span> <span class="o">=</span> <span class="n">query_location_az_alt</span><span class="p">(</span>
+            <span class="n">date</span><span class="p">,</span>
+            <span class="n">ra_canonical</span><span class="p">,</span>
+            <span class="n">dec_canonical</span><span class="p">)</span>
+
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span>
+            <span class="n">test_az</span><span class="p">,</span> <span class="n">expected_az</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span>
+            <span class="n">test_alt</span><span class="p">,</span> <span class="n">expected_alt</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div></div>
+<div class="viewcode-block" id="NewExposureTest"><a class="viewcode-back" href="../test.html#test.NewExposureTest">[docs]</a><span class="k">class</span> <span class="nc">NewExposureTest</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Test exposure calculations using beam_model.py code &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="NewExposureTest.test_coordinate_transform_azalt"><a class="viewcode-back" href="../test.html#test.NewExposureTest.test_coordinate_transform_azalt">[docs]</a>    <span class="k">def</span> <span class="nf">test_coordinate_transform_azalt</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Put an object at Zenith and see x-y = 0-90 &quot;&quot;&quot;</span>
+        <span class="n">beam_model</span> <span class="o">=</span> <span class="n">BeamModel</span><span class="p">({})</span>
+
+        <span class="c1"># This should be very close to zenith</span>
+        <span class="n">dec_injection</span> <span class="o">=</span> <span class="mf">40.</span> <span class="o">+</span> <span class="mf">40.</span><span class="o">/</span><span class="mf">60.</span>
+        <span class="n">ra_injection</span> <span class="o">=</span> <span class="p">(</span><span class="mf">15.</span> <span class="o">+</span> <span class="mf">44.75</span><span class="o">/</span><span class="mf">60.</span><span class="p">)</span><span class="o">/</span><span class="mf">24.</span><span class="o">*</span><span class="mf">360.</span>
+        <span class="n">date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span>
+            <span class="n">year</span><span class="o">=</span><span class="mi">2018</span><span class="p">,</span>
+            <span class="n">month</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">day</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">hour</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+        <span class="n">position</span> <span class="o">=</span> <span class="n">beam_model</span><span class="o">.</span><span class="n">get_position_from_equatorial</span><span class="p">(</span>
+            <span class="n">ra_injection</span><span class="p">,</span>
+            <span class="n">dec_injection</span><span class="p">,</span>
+            <span class="n">date</span><span class="p">)</span>
+
+        <span class="n">expected_xy</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">]</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span>
+            <span class="n">position</span><span class="p">,</span>
+            <span class="n">expected_xy</span><span class="p">,</span>
+            <span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="NewExposureTest.test_sensitivity_calculation"><a class="viewcode-back" href="../test.html#test.NewExposureTest.test_sensitivity_calculation">[docs]</a>    <span class="k">def</span> <span class="nf">test_sensitivity_calculation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Test sensitivity is max in center of one beam &quot;&quot;&quot;</span>
+
+        <span class="n">beam_model</span> <span class="o">=</span> <span class="n">FFTFormedSincBeamModel</span><span class="p">(</span><span class="n">BEAM_MODEL_CONFIG</span><span class="p">)</span>
+
+        <span class="n">center_beam</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">90.</span><span class="p">]</span>
+        <span class="n">off_beam</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="mi">0</span><span class="o">+</span><span class="n">BEAM_MODEL_CONFIG</span><span class="p">[</span><span class="s1">&#39;beam_sep_x&#39;</span><span class="p">],</span> <span class="c1">#EW</span>
+            <span class="mf">90.</span><span class="o">+</span><span class="n">BEAM_MODEL_CONFIG</span><span class="p">[</span><span class="s1">&#39;beam_sep_x&#39;</span><span class="p">]]</span> <span class="c1">#NS</span>
+
+        <span class="n">beams</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">256</span><span class="p">))</span>
+        <span class="n">sensitivies</span> <span class="o">=</span> <span class="n">beam_model</span><span class="o">.</span><span class="n">get_sensitivity</span><span class="p">(</span>
+            <span class="n">beams</span><span class="p">,</span>
+            <span class="n">positions</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">center_beam</span><span class="p">,</span> <span class="n">off_beam</span><span class="p">]),</span>
+            <span class="n">freqs</span><span class="o">=</span><span class="p">[</span><span class="mi">600</span><span class="p">])</span>
+        <span class="c1"># Center beam &gt; off-beam</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertGreater</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">sensitivies</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">sensitivies</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span></div>
+
+<div class="viewcode-block" id="NewExposureTest.test_1024_beams_allowed"><a class="viewcode-back" href="../test.html#test.NewExposureTest.test_1024_beams_allowed">[docs]</a>    <span class="k">def</span> <span class="nf">test_1024_beams_allowed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Test that 1024 beams are allowed into get_sensitivity &quot;&quot;&quot;</span>
+
+        <span class="n">beam_model</span> <span class="o">=</span> <span class="n">FFTFormedSincBeamModel</span><span class="p">(</span><span class="n">BEAM_MODEL_CONFIG</span><span class="p">)</span>
+
+        <span class="n">center_beam</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">90.</span><span class="p">]</span>
+
+        <span class="n">beams</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1024</span><span class="p">))</span>
+        <span class="n">beam_model</span><span class="o">.</span><span class="n">get_sensitivity</span><span class="p">(</span>
+            <span class="n">beams</span><span class="p">,</span>
+            <span class="n">positions</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">center_beam</span><span class="p">]),</span>
+            <span class="n">freqs</span><span class="o">=</span><span class="p">[</span><span class="mi">600</span><span class="p">])</span></div></div>
+
+<div class="viewcode-block" id="ExposureLightcurveTest"><a class="viewcode-back" href="../test.html#test.ExposureLightcurveTest">[docs]</a><span class="k">class</span> <span class="nc">ExposureLightcurveTest</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Test the exposure &quot;lightcurve&quot; which uses the beam_model code &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="ExposureLightcurveTest.setUp"><a class="viewcode-back" href="../test.html#test.ExposureLightcurveTest.setUp">[docs]</a>    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Generate settings for a point passing through zenith &quot;&quot;&quot;</span>
+        <span class="c1"># This should be very close to zenith at meridian</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dec_injection</span> <span class="o">=</span> <span class="mf">40.</span> <span class="o">+</span> <span class="mf">40.</span><span class="o">/</span><span class="mf">60.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ra_injection</span> <span class="o">=</span> <span class="p">(</span><span class="mf">15.</span> <span class="o">+</span> <span class="mf">44.75</span><span class="o">/</span><span class="mf">60.</span><span class="p">)</span><span class="o">/</span><span class="mf">24.</span><span class="o">*</span><span class="mf">360.</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span>
+            <span class="n">year</span><span class="o">=</span><span class="mi">2018</span><span class="p">,</span>
+            <span class="n">month</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">day</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">hour</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beams</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1024</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_date</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">minute</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span> <span class="o">=</span> <span class="mi">20</span><span class="o">*</span><span class="n">minute</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span> <span class="o">=</span> <span class="p">[</span><span class="mi">600</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="ExposureLightcurveTest.generate_default_lightcurve"><a class="viewcode-back" href="../test.html#test.ExposureLightcurveTest.generate_default_lightcurve">[docs]</a>    <span class="k">def</span> <span class="nf">generate_default_lightcurve</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Generate a lightcurve using the provided settings &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ra_injection</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dec_injection</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start_date</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">end_date</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">beams</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ExposureLightcurveTest.test_generate_timestream"><a class="viewcode-back" href="../test.html#test.ExposureLightcurveTest.test_generate_timestream">[docs]</a>    <span class="k">def</span> <span class="nf">test_generate_timestream</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; See if any time stream is generated by function &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_lightcurve</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lightcurve</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">73</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ExposureLightcurveTest.test_timestream_validitity"><a class="viewcode-back" href="../test.html#test.ExposureLightcurveTest.test_timestream_validitity">[docs]</a>    <span class="k">def</span> <span class="nf">test_timestream_validitity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Test various expected properties of the timestream</span>
+
+<span class="sd">        These include:</span>
+<span class="sd">            - Most of the time, 0 sensitivity is expected for low latitude</span>
+<span class="sd">            - Some of the time, high sensitivity is expected for low lat.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_lightcurve</span><span class="p">()</span>
+        <span class="n">number_samples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lightcurve</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">lightcurve_peak</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lightcurve</span><span class="p">)</span>
+        <span class="n">zero_sample_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lightcurve</span> <span class="o">&lt;</span> <span class="n">lightcurve_peak</span><span class="o">*</span><span class="mf">0.01</span><span class="p">)</span>
+        <span class="n">number_zero_samples</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lightcurve</span><span class="p">[</span><span class="n">zero_sample_indices</span><span class="p">])</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">number_nonzero_samples</span> <span class="o">=</span> <span class="n">number_samples</span> <span class="o">-</span> <span class="n">number_zero_samples</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertGreater</span><span class="p">(</span><span class="n">number_samples</span><span class="p">,</span> <span class="n">number_zero_samples</span><span class="p">)</span>
+
+        <span class="c1"># Should have more almost-zero samples than nonzero</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertGreater</span><span class="p">(</span><span class="n">number_zero_samples</span><span class="p">,</span> <span class="n">number_nonzero_samples</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ExposureLightcurveTest.test_shape_multifrequency"><a class="viewcode-back" href="../test.html#test.ExposureLightcurveTest.test_shape_multifrequency">[docs]</a>    <span class="k">def</span> <span class="nf">test_shape_multifrequency</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Test that multiple frequencies change the shape &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span> <span class="o">=</span> <span class="p">[</span><span class="mi">400</span><span class="p">,</span> <span class="mi">600</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_lightcurve</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lightcurve</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lightcurve</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="ExposureMapTest"><a class="viewcode-back" href="../test.html#test.ExposureMapTest">[docs]</a><span class="k">class</span> <span class="nc">ExposureMapTest</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Test all aspects of an exposure map &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="ExposureMapTest.setUp"><a class="viewcode-back" href="../test.html#test.ExposureMapTest.setUp">[docs]</a>    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Create default settings for map a point passing through zenith &quot;&quot;&quot;</span>
+        <span class="c1"># This should be very close to zenith at meridian</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span>
+            <span class="n">year</span><span class="o">=</span><span class="mi">2018</span><span class="p">,</span>
+            <span class="n">month</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">day</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">hour</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+            <span class="n">minute</span><span class="o">=</span><span class="mi">48</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beams</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1024</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_date</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_resolution</span> <span class="o">=</span> <span class="mi">36</span>
+        <span class="n">minute</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span> <span class="o">=</span> <span class="p">[</span><span class="mi">600</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">detection_threshold</span> <span class="o">=</span> <span class="mf">0.5</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ra_lower</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ra_upper</span> <span class="o">=</span> <span class="mf">360.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dec_lower</span> <span class="o">=</span> <span class="o">-</span><span class="mf">90.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dec_upper</span> <span class="o">=</span> <span class="mf">90.</span></div>
+
+<div class="viewcode-block" id="ExposureMapTest.generate_default_map"><a class="viewcode-back" href="../test.html#test.ExposureMapTest.generate_default_map">[docs]</a>    <span class="k">def</span> <span class="nf">generate_default_map</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Generate a map using the given settings &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span> <span class="o">=</span> <span class="n">generate_exposure_map</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start_date</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">end_date</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spatial_resolution</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">beams</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">detection_threshold</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ra_lower</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ra_upper</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dec_lower</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dec_upper</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ExposureMapTest.test_dimensions"><a class="viewcode-back" href="../test.html#test.ExposureMapTest.test_dimensions">[docs]</a>    <span class="k">def</span> <span class="nf">test_dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Test that resolution and range gives right dimensions &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_resolution</span> <span class="o">=</span> <span class="mi">90</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_map</span><span class="p">()</span>
+        <span class="n">exposure_map_lowres</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span>
+            <span class="n">exposure_map_lowres</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+            <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_resolution</span> <span class="o">=</span> <span class="mi">36</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_map</span><span class="p">()</span>
+        <span class="n">exposure_map_hires</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span>
+            <span class="n">exposure_map_hires</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+            <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ExposureMapTest.test_low_latitude_zero"><a class="viewcode-back" href="../test.html#test.ExposureMapTest.test_low_latitude_zero">[docs]</a>    <span class="k">def</span> <span class="nf">test_low_latitude_zero</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Test that low latitude points give zero exposure &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_resolution</span> <span class="o">=</span> <span class="mi">90</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_map</span><span class="p">()</span>
+
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]),</span>
+            <span class="mi">3</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ExposureMapTest.test_high_latitude_nonzero"><a class="viewcode-back" href="../test.html#test.ExposureMapTest.test_high_latitude_nonzero">[docs]</a>    <span class="k">def</span> <span class="nf">test_high_latitude_nonzero</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Test that high latitudes have higher exposure &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_resolution</span> <span class="o">=</span> <span class="mf">9.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dec_injection</span> <span class="o">=</span> <span class="mf">40.</span> <span class="o">+</span> <span class="mf">40.</span><span class="o">/</span><span class="mf">60.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ra_lower</span> <span class="o">=</span> <span class="p">(</span><span class="mf">15.</span> <span class="o">+</span> <span class="mf">44.75</span><span class="o">/</span><span class="mf">60.</span><span class="p">)</span><span class="o">/</span><span class="mf">24.</span><span class="o">*</span><span class="mf">360.</span> <span class="o">-</span> <span class="mf">0.5</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ra_upper</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra_lower</span> <span class="o">+</span> <span class="mf">1.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_map</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertGreater</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">3</span><span class="p">:]),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]))</span></div>
+
+<div class="viewcode-block" id="ExposureMapTest.test_double_time_doubles_exposure"><a class="viewcode-back" href="../test.html#test.ExposureMapTest.test_double_time_doubles_exposure">[docs]</a>    <span class="k">def</span> <span class="nf">test_double_time_doubles_exposure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Test that doubling time doubles exposure &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_resolution</span> <span class="o">=</span> <span class="mf">9.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dec_injection</span> <span class="o">=</span> <span class="mf">40.</span> <span class="o">+</span> <span class="mf">40.</span><span class="o">/</span><span class="mf">60.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ra_lower</span> <span class="o">=</span> <span class="p">(</span><span class="mf">15.</span> <span class="o">+</span> <span class="mf">44.75</span><span class="o">/</span><span class="mf">60.</span><span class="p">)</span><span class="o">/</span><span class="mf">24.</span><span class="o">*</span><span class="mf">360.</span> <span class="o">-</span> <span class="mf">0.5</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ra_upper</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra_lower</span> <span class="o">+</span> <span class="mf">1.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_date</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_map</span><span class="p">()</span>
+        <span class="n">short_time_exposure</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_date</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_map</span><span class="p">()</span>
+        <span class="n">long_time_exposure</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span><span class="p">)</span>
+
+        <span class="c1"># Verify the short time is ~2 smaller</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertGreater</span><span class="p">(</span><span class="n">long_time_exposure</span><span class="p">,</span> <span class="mf">0.00</span><span class="p">)</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span>
+            <span class="n">short_time_exposure</span><span class="o">*</span><span class="mf">2.</span><span class="o">/</span><span class="n">long_time_exposure</span><span class="p">,</span>
+            <span class="mi">1</span><span class="p">,</span>
+            <span class="mi">0</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="FullSystemTest"><a class="viewcode-back" href="../test.html#test.FullSystemTest">[docs]</a><span class="k">class</span> <span class="nc">FullSystemTest</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Do full system tests of the sensitivity code &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="FullSystemTest.test_snr_output_b0329"><a class="viewcode-back" href="../test.html#test.FullSystemTest.test_snr_output_b0329">[docs]</a>    <span class="k">def</span> <span class="nf">test_snr_output_b0329</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Expect b0329 to have greater than 800 SNR &quot;&quot;&quot;</span>
+        <span class="n">b0329</span> <span class="o">=</span> <span class="n">get_pulsar</span><span class="p">(</span><span class="s1">&#39;B0329+54&#39;</span><span class="p">)</span>
+        <span class="n">max_snr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">expected_snr_curve_pulsar</span><span class="p">(</span><span class="n">b0329</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertGreater</span><span class="p">(</span><span class="n">max_snr</span><span class="p">,</span> <span class="mi">800</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="suite"><a class="viewcode-back" href="../test.html#test.suite">[docs]</a><span class="k">def</span> <span class="nf">suite</span><span class="p">():</span>
+    <span class="n">suite</span> <span class="o">=</span> <span class="n">unittest</span><span class="o">.</span><span class="n">TestSuite</span><span class="p">()</span>
+    <span class="n">suite</span><span class="o">.</span><span class="n">addTest</span><span class="p">(</span><span class="n">ExposureMapTest</span><span class="p">(</span><span class="s1">&#39;test_dimensions&#39;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">suite</span></div>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="c1">#suite = unittest.TestLoader().loadTestsFromTestCase(ExposureTest)</span>
+    <span class="c1">#suite = unittest.TestLoader().loadTestsFromTestCase(ExposureMapTest)</span>
+    <span class="n">suite</span> <span class="o">=</span> <span class="n">unittest</span><span class="o">.</span><span class="n">TestLoader</span><span class="p">()</span><span class="o">.</span><span class="n">loadTestsFromTestCase</span><span class="p">(</span><span class="n">FullSystemTest</span><span class="p">)</span>
+    <span class="n">unittest</span><span class="o">.</span><span class="n">TextTestRunner</span><span class="p">(</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">suite</span><span class="p">)</span>
+    <span class="c1">#runner = unittest.TextTestRunner()</span>
+    <span class="c1">#runner.run(suite())</span>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">chime-sensitivity</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Miles Cranmer, CHIME/FRB Collaboration.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,875 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>beam_model &#8212; chime-sensitivity 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for beam_model</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Provides a description of the synthesized CHIME beams.</span>
+
+<span class="sd">Example</span>
+<span class="sd">-------</span>
+
+<span class="sd">To load beam model as per the current pipeline confiuration:</span>
+
+<span class="sd">```</span>
+<span class="sd">from frb_L2_L3 import beam_model</span>
+<span class="sd">beammod = beam_model.current_model_class(beam_model.current_config)</span>
+<span class="sd">```</span>
+
+<span class="sd">Then do things with `beammod` to your hearts content.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">ephem</span>
+
+<span class="n">_SPEED_OF_LIGHT</span> <span class="o">=</span> <span class="mf">299792458.</span>
+<span class="n">_D2R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.</span> <span class="c1"># conversion to radians</span>
+
+<span class="n">CHIME</span> <span class="o">=</span> <span class="n">ephem</span><span class="o">.</span><span class="n">Observer</span><span class="p">()</span>
+<span class="n">CHIME</span><span class="o">.</span><span class="n">lat</span> <span class="o">=</span> <span class="s1">&#39;49.321601&#39;</span>
+<span class="n">CHIME</span><span class="o">.</span><span class="n">lon</span> <span class="o">=</span> <span class="s1">&#39;-119.620149&#39;</span>
+
+<div class="viewcode-block" id="BeamModel"><a class="viewcode-back" href="../beam_model.html#beam_model.BeamModel">[docs]</a><span class="k">class</span> <span class="nc">BeamModel</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Provides a description of the synthesized CHIME beams.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    config : dict</span>
+<span class="sd">        A dictionary of any configuration parameters needed in the beam model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+
+<div class="viewcode-block" id="BeamModel.get_array_indices_for_beams"><a class="viewcode-back" href="../beam_model.html#beam_model.BeamModel.get_array_indices_for_beams">[docs]</a>    <span class="k">def</span> <span class="nf">get_array_indices_for_beams</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a list of beam_ids return the index in the all_offsets array</span>
+<span class="sd">        for those beams.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        beam_ids : array_like</span>
+<span class="sd">            An array of beam_ids of length N.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        ndarray</span>
+<span class="sd">            An array of indices.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+
+<span class="sd">        This does seem a bit inelegant. Also, should stop using &quot;offsets&quot;;</span>
+<span class="sd">        use &quot;positions&quot; or &quot;beam_postions&quot; instead, its less confusing.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">beam_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">beam_ids</span><span class="p">)</span>
+        <span class="n">offsets_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">beam_ids</span><span class="o">/</span><span class="mi">1000</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ny</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">beam_ids</span> <span class="o">%</span> <span class="mi">1000</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">offsets_idx</span></div>
+
+<div class="viewcode-block" id="BeamModel.get_beam_positions"><a class="viewcode-back" href="../beam_model.html#beam_model.BeamModel.get_beam_positions">[docs]</a>    <span class="k">def</span> <span class="nf">get_beam_positions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a list of beam_ids return the ``[x, y]`` positions of those beams.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        beam_ids : array_like</span>
+<span class="sd">            An array of beam_ids of length N.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        ndarray</span>
+<span class="sd">            An array of positions for each beam_id, has shape (N,2)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">offsets_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_array_indices_for_beams</span><span class="p">(</span><span class="n">beam_ids</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_offsets</span><span class="p">[</span><span class="n">offsets_idx</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="BeamModel.get_sensitivity"><a class="viewcode-back" href="../beam_model.html#beam_model.BeamModel.get_sensitivity">[docs]</a>    <span class="k">def</span> <span class="nf">get_sensitivity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beams</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">freqs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        For a list of beam IDs return the sensitivites for a list of positions.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        beams : array_like</span>
+<span class="sd">             IDs for the beams for which to calculate sensitivities.</span>
+<span class="sd">             Has shape (N).</span>
+<span class="sd">        positions : array_like</span>
+<span class="sd">             Positions in ``x`` and ``y`` coordinates in degrees.</span>
+<span class="sd">             Has shape (M,2).</span>
+<span class="sd">             See beam model doc for coordinate description.</span>
+<span class="sd">        freqs: array_like</span>
+<span class="sd">             Frequencies in MHz.</span>
+<span class="sd">             Has shape (K).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        ndarray</span>
+<span class="sd">            Relative sensitivities for each beam and position. The on-axis</span>
+<span class="sd">            sensitivity is 1. Has shape (M,N,K).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;get_sensitivity should be implemented in sub-class&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BeamModel.get_beam_widths"><a class="viewcode-back" href="../beam_model.html#beam_model.BeamModel.get_beam_widths">[docs]</a>    <span class="k">def</span> <span class="nf">get_beam_widths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beams</span><span class="p">,</span> <span class="n">freq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        For a list of beam IDs return the N/S and E/W beam widths.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        beams : array_like</span>
+<span class="sd">             IDs for the beams for which to calculate sensitivities.</span>
+<span class="sd">             Has shape (N).</span>
+<span class="sd">        freqs: float or array_like</span>
+<span class="sd">             Frequency(ies) in MHz.</span>
+<span class="sd">             Has shape (K).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        ndarray</span>
+<span class="sd">            Beam width in ``x&#39;&#39; (E/W) and ``y&#39;&#39; (N/S) for each beam and frequency.</span>
+<span class="sd">            Has shape (N,K,2).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;get_beam_widths should be implemented in sub-class&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BeamModel.get_equatorial_from_position"><a class="viewcode-back" href="../beam_model.html#beam_model.BeamModel.get_equatorial_from_position">[docs]</a>    <span class="k">def</span> <span class="nf">get_equatorial_from_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        For a position x, y in the beam grid return the RA and Dec</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        x : float</span>
+<span class="sd">             ``x`` position in coordinate grid.</span>
+<span class="sd">        y : float</span>
+<span class="sd">             ``y`` position in coordinate grid.</span>
+<span class="sd">        time : datetime object or astropy.Time object</span>
+<span class="sd">             Time at observatory to perform transform.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        ra : float</span>
+<span class="sd">             Right ascension in celestial coordinates.</span>
+<span class="sd">        dec : float</span>
+<span class="sd">             Declination in celestial coordinates.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+
+<span class="sd">        In this base class these translations assume the beam grid laid out in</span>
+<span class="sd">        the beam model sphinx doc. If a beam model uses a different convention</span>
+<span class="sd">        this function will need to be overridden.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">lat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">CHIME</span><span class="o">.</span><span class="n">lat</span><span class="p">)</span><span class="c1"># radians</span>
+
+        <span class="c1"># use frame where poles are on horizon to avoid singularity at zenith</span>
+
+        <span class="n">phi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">2.</span> <span class="o">-</span> <span class="n">y</span><span class="o">*</span><span class="n">_D2R</span> <span class="c1"># polar angle</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="n">_D2R</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span> <span class="c1"># azimuthal angle</span>
+
+        <span class="n">dec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">))</span>
+
+        <span class="n">cosh</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">dec</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">dec</span><span class="p">))</span>
+        <span class="n">sinh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">dec</span><span class="p">)</span>
+
+        <span class="n">hour_angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">sinh</span><span class="p">,</span> <span class="n">cosh</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">time</span>
+
+        <span class="n">ra_deg</span> <span class="o">=</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sidereal_time</span><span class="p">()</span> <span class="o">-</span> <span class="n">hour_angle</span><span class="p">)</span> <span class="o">/</span> <span class="n">_D2R</span><span class="p">)</span> <span class="o">%</span> <span class="mi">360</span>
+        <span class="n">dec_deg</span> <span class="o">=</span> <span class="n">dec</span> <span class="o">/</span> <span class="n">_D2R</span>
+
+        <span class="n">delta_ra</span><span class="p">,</span> <span class="n">delta_dec</span> <span class="o">=</span> <span class="n">_get_precession</span><span class="p">(</span><span class="n">ra_deg</span><span class="p">,</span> <span class="n">dec_deg</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ra_deg</span> <span class="o">-</span> <span class="n">delta_ra</span><span class="p">,</span> <span class="n">dec_deg</span> <span class="o">-</span> <span class="n">delta_dec</span></div>
+
+<div class="viewcode-block" id="BeamModel.get_position_from_equatorial"><a class="viewcode-back" href="../beam_model.html#beam_model.BeamModel.get_position_from_equatorial">[docs]</a>    <span class="k">def</span> <span class="nf">get_position_from_equatorial</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ra_deg</span><span class="p">,</span> <span class="n">dec_deg</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        For a position x, y in the beam grid return the RA and Dec</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        ra_deg : float</span>
+<span class="sd">             Right ascension in celestial coordinates in degrees.</span>
+<span class="sd">        dec_deg : float</span>
+<span class="sd">             Declination in celestial coordinates in degrees.</span>
+<span class="sd">        time : datetime object or astropy.Time object</span>
+<span class="sd">             Time at observatory to perform transform.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        x : float</span>
+<span class="sd">             ``x`` position in coordinate grid.</span>
+<span class="sd">        y : float</span>
+<span class="sd">             ``y`` position in coordinate grid.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+
+<span class="sd">        In this base class these translations assume the beam grid laid out in</span>
+<span class="sd">        the beam model sphinx doc. If a beam model uses a different convention</span>
+<span class="sd">        this function will need to be overridden.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">lat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">CHIME</span><span class="o">.</span><span class="n">lat</span><span class="p">)</span><span class="c1"># radians</span>
+
+        <span class="c1"># Pass string to ephem object</span>
+        <span class="n">CHIME</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y/%m/</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span><span class="p">)</span>
+
+        <span class="n">delta_ra</span><span class="p">,</span> <span class="n">delta_dec</span> <span class="o">=</span> <span class="n">_get_precession</span><span class="p">(</span><span class="n">ra_deg</span><span class="p">,</span> <span class="n">dec_deg</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
+        <span class="n">ra_deg</span> <span class="o">+=</span> <span class="n">delta_ra</span>
+        <span class="n">dec_deg</span> <span class="o">+=</span> <span class="n">delta_dec</span>
+
+        <span class="n">hour_angle</span> <span class="o">=</span> <span class="p">(</span><span class="n">CHIME</span><span class="o">.</span><span class="n">sidereal_time</span><span class="p">()</span> <span class="o">-</span> <span class="n">ra_deg</span><span class="o">*</span><span class="n">_D2R</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="mf">2.</span><span class="p">)</span>
+        <span class="n">dec</span> <span class="o">=</span> <span class="n">dec_deg</span><span class="o">*</span><span class="n">_D2R</span>
+
+        <span class="n">phi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">dec</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">dec</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">hour_angle</span><span class="p">))</span>
+
+        <span class="n">sintheta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">dec</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">hour_angle</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span>
+        <span class="n">costheta</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">dec</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">phi</span><span class="p">))</span> <span class="o">/</span> \
+                   <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">phi</span><span class="p">))</span>
+
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">sintheta</span><span class="p">,</span> <span class="n">costheta</span><span class="p">)</span>
+
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">2.</span> <span class="o">-</span> <span class="n">phi</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">theta</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">x</span><span class="o">/</span><span class="n">_D2R</span><span class="p">,</span> <span class="n">y</span><span class="o">/</span><span class="n">_D2R</span></div></div>
+
+
+<div class="viewcode-block" id="EvenSincBeamModel"><a class="viewcode-back" href="../beam_model.html#beam_model.EvenSincBeamModel">[docs]</a><span class="k">class</span> <span class="nc">EvenSincBeamModel</span><span class="p">(</span><span class="n">BeamModel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An idealized beam model with evenly spaced ``sinc**2`` functions for each beam.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    config : dict</span>
+<span class="sd">        A dictionary containing: &#39;beam_sep&#39;, &#39;Nx&#39;, Ny&#39;.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">EvenSincBeamModel</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">beam_sep</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;beam_sep_x&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Nx</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;Nx&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Ny</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;Ny&quot;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_offsets</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">beam_sep</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">((</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">Nx</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span>
+                                                           <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Nx</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="p">),</span>
+                                                 <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">((</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">Ny</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span>
+                                                           <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Ny</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="p">)))</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_beam_fwhm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate FWHM of synthesized beam for a given frequnecy</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        freq : float</span>
+<span class="sd">            Frequency in MHz</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        float</span>
+<span class="sd">            FWHM in degrees</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">wavelength</span> <span class="o">=</span> <span class="n">_SPEED_OF_LIGHT</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span><span class="o">*</span><span class="mf">1.e6</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mf">180.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">wavelength</span><span class="o">/</span><span class="mf">100.</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_single_beam_signal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_off</span><span class="p">,</span> <span class="n">y_off</span><span class="p">,</span> <span class="n">freq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get beam signal at position ``x_off``, ``y_off`` in degrees from beam</span>
+<span class="sd">        center for a single beam.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        x_off : float or array_like</span>
+<span class="sd">            x offset or array of x offsets from beam center in degrees.</span>
+<span class="sd">            Must be same shape as ``y_off``.</span>
+
+<span class="sd">        y_off : float or array_like</span>
+<span class="sd">            y offset or array of y offsets from beam center in degrees.</span>
+<span class="sd">            Must be same shape as ``x_off``.</span>
+
+<span class="sd">        freq : float or array_like, optional</span>
+<span class="sd">            frequency or array of frequencies to calculate signal at in MHz.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        ndarray</span>
+<span class="sd">            Relative beam signal (centre of beam is 1).</span>
+<span class="sd">            Array is the same shape as ``x_off`` and ``y_off`` with an</span>
+<span class="sd">            axis added for ``freq``, i.e. ``(shape(x_off),len(freq))``</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+
+<span class="sd">        Can calculate signal for several positions if arrays of x and y</span>
+<span class="sd">        positions are given as ``x_off`` and ``y_off``.</span>
+
+<span class="sd">        Can also calculate for several frequencies if ``freq`` is an array.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">sincsq_halfmax</span> <span class="o">=</span> <span class="mf">0.44295</span>
+        <span class="n">beam_fwhm_deg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_beam_fwhm</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">x_off</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y_off</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sinc</span><span class="p">(</span><span class="n">sincsq_halfmax</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">offset</span><span class="p">)[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="o">/</span>
+                       <span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">beam_fwhm_deg</span><span class="p">)[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="o">...</span><span class="p">]))</span><span class="o">**</span><span class="mi">2</span>
+
+<div class="viewcode-block" id="EvenSincBeamModel.get_sensitivity"><a class="viewcode-back" href="../beam_model.html#beam_model.EvenSincBeamModel.get_sensitivity">[docs]</a>    <span class="k">def</span> <span class="nf">get_sensitivity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beams</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">freqs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        For a list of beam IDs return the sensitivites for a list of positions.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        beams : array_like</span>
+<span class="sd">             IDs for the beams for which to calculate sensitivities.</span>
+<span class="sd">             Has shape (N).</span>
+<span class="sd">        positions : array_like</span>
+<span class="sd">             Positions in ``x`` and ``y`` coordinates in degrees.</span>
+<span class="sd">             Has shape (M,2).</span>
+<span class="sd">             See beam model doc for coordinate description.</span>
+<span class="sd">        freqs: array_like</span>
+<span class="sd">             Frequencies in MHz.</span>
+<span class="sd">             Has shape (K).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        ndarray</span>
+<span class="sd">            Relative sensitivities for each beam and position. The on-axis</span>
+<span class="sd">            sensitivity is 1. Has shape (M,N,K).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">offsets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_beam_positions</span><span class="p">(</span><span class="n">beams</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_single_beam_signal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="o">-</span>
+                                                   <span class="n">offsets</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+                                                   <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y</span><span class="p">)[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="o">-</span>
+                                                   <span class="n">offsets</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+                                                   <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">freqs</span><span class="p">]))))</span></div>
+
+<div class="viewcode-block" id="EvenSincBeamModel.get_beam_widths"><a class="viewcode-back" href="../beam_model.html#beam_model.EvenSincBeamModel.get_beam_widths">[docs]</a>    <span class="k">def</span> <span class="nf">get_beam_widths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beams</span><span class="p">,</span> <span class="n">freq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        For a list of beam IDs return the N/S and E/W beam widths.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        beams : int or array_like</span>
+<span class="sd">             IDs for the beams for which to calculate sensitivities.</span>
+<span class="sd">             Has shape (N).</span>
+<span class="sd">        freq: float or array_like</span>
+<span class="sd">             Frequency(ies) in MHz.</span>
+<span class="sd">             Has shape (K).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        ndarray</span>
+<span class="sd">            Beam width in ``x&#39;&#39; (E/W) and ``y&#39;&#39; (N/S) for each beam and frequency.</span>
+<span class="sd">            Has shape (N,K,2).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">freq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>
+        <span class="n">beams</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">beams</span><span class="p">)</span>
+        <span class="n">widths</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_beam_fwhm</span><span class="p">(</span><span class="n">freq</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">beams</span><span class="p">))</span>
+        <span class="n">widths</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">beams</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">freq</span><span class="p">))</span>
+        <span class="n">widths</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">widths</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">widths</span><span class="o">.</span><span class="n">T</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">widths</span><span class="o">.</span><span class="n">T</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="FFTFormedSincBeamModel"><a class="viewcode-back" href="../beam_model.html#beam_model.FFTFormedSincBeamModel">[docs]</a><span class="k">class</span> <span class="nc">FFTFormedSincBeamModel</span><span class="p">(</span><span class="n">BeamModel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An beam model with ``sinc**2`` functions spaced evenly in sin(y) and evenly</span>
+<span class="sd">    in x. Takes into account:</span>
+
+<span class="sd">    * Spacing in sin(y) as provided by FFT beamforming</span>
+<span class="sd">    * Elongation of beam as it approaches horizon</span>
+<span class="sd">    * Frequency dependant beam centers and how they are clamped</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    config : dict</span>
+<span class="sd">        A dictionary containing: &#39;beam_sep_x&#39;, &#39;feed_sep&#39;, &#39;Nx&#39;, Ny&#39;,</span>
+<span class="sd">                                 &#39;clamp_pad&#39;, &#39;clamp_tile&#39;, &#39;clamp_freq&#39;</span>
+<span class="sd">        &#39;beam_sep_x&#39; : separation in degress of E-W beams</span>
+<span class="sd">        &#39;feed_sep&#39; : physical N-S separation of feeds in meters</span>
+<span class="sd">        &#39;Nx&#39; : number of E-W beam columns</span>
+<span class="sd">        &#39;Ny&#39; : number of N-S beam rows</span>
+<span class="sd">        &#39;clamp_pad&#39; : Factor that the FFT is padded in beam forming</span>
+<span class="sd">        &#39;clamp_tile&#39; : Factor that the FFT is extended beyond Nyquist freq.</span>
+<span class="sd">        &#39;clamp_freq&#39; : Frequency at which reference angles to clamp to are</span>
+<span class="sd">                       determined.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">FFTFormedSincBeamModel</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+        <span class="c1"># These prevent redundant computation. However, upon</span>
+        <span class="c1"># changing the beam_ids, reset these to None so they</span>
+        <span class="c1"># are recalculated.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clamp_result</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offsets</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">beam_sep_x</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;beam_sep_x&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beam_sep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_sep_x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feed_sep</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;feed_sep&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Nx</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;Nx&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Ny</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;Ny&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clamp_pad</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;clamp_pad&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clamp_tile</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;clamp_tile&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clamp_freq</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;clamp_freq&quot;</span><span class="p">]</span>
+
+
+        <span class="n">reference_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">((</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">Ny</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Ny</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span>
+        <span class="c1">#self.reference_angles = np.arcsin(_SPEED_OF_LIGHT * reference_indices / \</span>
+                            <span class="c1">#(self.clamp_freq*1.e6 * self.Ny * self.feed_sep)) \</span>
+                            <span class="c1">#/ _D2R</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_offsets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beam_sep_x</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">((</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">Nx</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Nx</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">_clamping</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">,</span> <span class="n">freqs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return positions of beams for given beam_ids and frequencies taking</span>
+<span class="sd">        into account clamping.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        beam_ids : int or array_like</span>
+<span class="sd">            Beam id or array of beam ids. Has length N.</span>
+<span class="sd">        freqs : float or array_like</span>
+<span class="sd">            Frequency or list of frequencies in MHz. Has length M.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        output_angles : ndarray</span>
+<span class="sd">            NxM array of y positions of beams in grid for each beam and</span>
+<span class="sd">            frequency.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">beam_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">beam_ids</span><span class="p">)</span>
+        <span class="n">freqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">freqs</span><span class="p">)</span>
+
+        <span class="n">y_idx</span> <span class="o">=</span> <span class="n">beam_ids</span> <span class="o">%</span> <span class="mi">256</span>
+        <span class="c1">#print beam_ids</span>
+        <span class="c1">#print y_idx</span>
+
+        <span class="n">beam_angles_at_ref</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reference_angles</span><span class="p">[</span><span class="n">y_idx</span><span class="p">]</span>
+
+        <span class="n">padded_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">((</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">Ny</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">clamp_pad</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">clamp_tile</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span>
+                                   <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Ny</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">clamp_pad</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">clamp_tile</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span>
+
+        <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ny</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">clamp_pad</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clamp_freq</span> <span class="o">*</span> <span class="mf">1.e6</span><span class="p">)</span> <span class="o">*</span> \
+               <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feed_sep</span> <span class="o">/</span> <span class="n">_SPEED_OF_LIGHT</span> <span class="o">*</span> \
+               <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">beam_angles_at_ref</span> <span class="o">*</span> <span class="n">_D2R</span><span class="p">))</span> <span class="o">+</span> <span class="mf">0.5</span>
+
+        <span class="n">delta_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ny</span><span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">clamp_pad</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">feed_sep</span> <span class="o">/</span> <span class="n">_SPEED_OF_LIGHT</span> <span class="o">*</span> <span class="mf">1e6</span> <span class="o">*</span> \
+                  <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">freqs</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">clamp_freq</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">beam_angles_at_ref</span><span class="o">*</span><span class="n">_D2R</span><span class="p">))</span>
+
+        <span class="n">beam_indices_in_padded</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">t</span> <span class="o">+</span> <span class="n">delta_t</span><span class="p">)</span> <span class="o">+</span> \
+                                          <span class="bp">self</span><span class="o">.</span><span class="n">Ny</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">clamp_tile</span> <span class="o">*</span> \
+                                          <span class="bp">self</span><span class="o">.</span><span class="n">clamp_pad</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="n">output_angles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">_SPEED_OF_LIGHT</span> <span class="o">*</span> <span class="n">padded_indices</span><span class="p">[</span><span class="n">beam_indices_in_padded</span><span class="p">]</span> <span class="o">/</span> \
+                            <span class="p">(</span><span class="n">freqs</span><span class="o">*</span><span class="mf">1.e6</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ny</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">clamp_pad</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">feed_sep</span><span class="p">))</span> <span class="o">/</span> <span class="n">_D2R</span>
+
+        <span class="k">return</span> <span class="n">output_angles</span>
+
+    <span class="k">def</span> <span class="nf">_beam_fwhm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate FWHM of synthesized beam for a given frequnecy</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        freq : float</span>
+<span class="sd">            Frequency in MHz</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        float</span>
+<span class="sd">            FWHM in degrees</span>
+
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+
+<span class="sd">        The FWHM of the beam pattern for an FFT telescope of side D is</span>
+<span class="sd">        equivalent to a disk with diameter D/0.87.</span>
+
+<span class="sd">        See Tegmark &amp; Zaldarriaga (2009) Phys. Rev. D. 79, 083530</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">airy_diameter</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Ny</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">feed_sep</span> <span class="o">/</span> <span class="mf">0.87</span>
+
+        <span class="n">wavelength</span> <span class="o">=</span> <span class="n">_SPEED_OF_LIGHT</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span><span class="o">*</span><span class="mf">1.e6</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mf">180.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">wavelength</span><span class="o">/</span><span class="n">airy_diameter</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_single_beam_signal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_off</span><span class="p">,</span> <span class="n">y_off</span><span class="p">,</span> <span class="n">beam_za</span><span class="p">,</span> <span class="n">freq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get beam signal at position ``x_off``, ``y_off`` in degrees from beam</span>
+<span class="sd">        center for a single beam.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        x_off : float or array_like</span>
+<span class="sd">            x offset or array of x offsets from beam center in degrees.</span>
+<span class="sd">            Must be same shape as ``y_off``.</span>
+
+<span class="sd">        y_off : float or array_like</span>
+<span class="sd">            y offset or array of y offsets from beam center in degrees.</span>
+<span class="sd">            Must be same shape as ``x_off``.</span>
+
+<span class="sd">        beam_za: float or array_like</span>
+<span class="sd">            Zenith angle for each beam and freq whose signal is being calculated.</span>
+
+<span class="sd">        freq : float or array_like</span>
+<span class="sd">            frequency or array of frequencies to calculate signal at in MHz.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        ndarray</span>
+<span class="sd">            Relative beam signal (centre of beam is 1).</span>
+<span class="sd">            Array is the same shape as ``x_off`` and ``y_off`` with an</span>
+<span class="sd">            axis added for ``freq``, i.e. ``(shape(x_off),len(freq))``</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+
+<span class="sd">        Can calculate signal for several positions if arrays of x and y</span>
+<span class="sd">        positions are given as ``x_off`` and ``y_off``.</span>
+
+<span class="sd">        Can also calculate for several frequencies if ``freq`` is an array.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">sincsq_halfmax</span> <span class="o">=</span> <span class="mf">0.44295</span>
+
+        <span class="n">beam_fwhm_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_beam_fwhm</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>
+        <span class="n">beam_fwhm_y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_beam_fwhm</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">beam_za</span><span class="o">*</span><span class="n">_D2R</span><span class="p">)</span>
+
+        <span class="n">sensitivities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sinc</span><span class="p">(</span><span class="n">sincsq_halfmax</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">x_off</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">/</span>
+                                <span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">beam_fwhm_x</span><span class="p">)))</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> \
+                        <span class="n">np</span><span class="o">.</span><span class="n">sinc</span><span class="p">(</span><span class="n">sincsq_halfmax</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">y_off</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">/</span>
+                                <span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">beam_fwhm_y</span><span class="p">)))</span><span class="o">**</span><span class="mi">2</span>
+
+        <span class="k">return</span> <span class="n">sensitivities</span>
+
+<div class="viewcode-block" id="FFTFormedSincBeamModel.get_beam_positions"><a class="viewcode-back" href="../beam_model.html#beam_model.FFTFormedSincBeamModel.get_beam_positions">[docs]</a>    <span class="k">def</span> <span class="nf">get_beam_positions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">,</span> <span class="n">freqs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a list of beam_ids return the ``[x, y]`` positions of those beams.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        beam_ids : array_like</span>
+<span class="sd">            An array of beam_ids of length N.</span>
+<span class="sd">        freqs : array_like</span>
+<span class="sd">            An array of frequencies at which to calculate beam positions.</span>
+<span class="sd">            Has length M.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        ndarray</span>
+<span class="sd">            NxMx2 array of positions for each beam_id, and frequency.</span>
+
+
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+
+<span class="sd">        `beam_id`s outside of the beam grid will get position [0,0].</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">beam_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">beam_ids</span><span class="p">)</span>
+        <span class="n">freqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">freqs</span><span class="p">)</span>
+
+        <span class="n">x_idx</span> <span class="o">=</span> <span class="n">beam_ids</span> <span class="o">/</span> <span class="mi">256</span>
+        <span class="n">beams_in_grid</span> <span class="o">=</span> <span class="n">x_idx</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">Nx</span>
+
+        <span class="n">y_beam_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">beam_ids</span><span class="p">),</span><span class="nb">len</span><span class="p">(</span><span class="n">freqs</span><span class="p">)])</span>
+        <span class="n">x_beam_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">beam_ids</span><span class="p">)])</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">clamp_result</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clamp_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clamping</span><span class="p">(</span><span class="n">beam_ids</span><span class="p">[</span><span class="n">beams_in_grid</span><span class="p">],</span>
+                                                             <span class="n">freqs</span><span class="p">)</span>
+        <span class="n">y_beam_positions</span><span class="p">[</span><span class="n">beams_in_grid</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clamp_result</span>
+
+        <span class="n">x_beam_positions</span><span class="p">[</span><span class="n">beams_in_grid</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_offsets</span><span class="p">[</span><span class="n">x_idx</span><span class="p">[</span><span class="n">beams_in_grid</span><span class="p">]]</span>
+        <span class="n">x_beam_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">x_beam_positions</span><span class="p">,</span> \
+                                     <span class="n">y_beam_positions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">x_beam_positions</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="n">y_beam_positions</span><span class="o">.</span><span class="n">shape</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x_beam_positions</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">y_beam_positions</span><span class="o">.</span><span class="n">T</span><span class="p">])</span><span class="o">.</span><span class="n">T</span></div>
+
+<div class="viewcode-block" id="FFTFormedSincBeamModel.get_sensitivity"><a class="viewcode-back" href="../beam_model.html#beam_model.FFTFormedSincBeamModel.get_sensitivity">[docs]</a>    <span class="k">def</span> <span class="nf">get_sensitivity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beams</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">beam_positions</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        For a list of beam IDs return the sensitivities for a list of positions.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        beams : array_like</span>
+<span class="sd">             IDs for the beams for which to calculate sensitivities.</span>
+<span class="sd">             Has shape (N).</span>
+<span class="sd">        positions : array_like</span>
+<span class="sd">             Positions in ``x`` and ``y`` coordinates in degrees.</span>
+<span class="sd">             Has shape (M,2).</span>
+<span class="sd">             See beam model doc for coordinate description.</span>
+<span class="sd">        freqs: array_like</span>
+<span class="sd">             Frequencies in MHz.</span>
+<span class="sd">             Has shape (K).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        ndarray</span>
+<span class="sd">            Relative sensitivities for each beam and position. The on-axis</span>
+<span class="sd">            sensitivity is 1. Has shape (M,N,K).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">freqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">freqs</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">offsets</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reference_angles</span> <span class="o">=</span> <span class="n">beam_positions</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">offsets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_beam_positions</span><span class="p">(</span><span class="n">beams</span><span class="p">,</span> <span class="n">freqs</span><span class="p">)</span>
+            <span class="c1">## ID x freq x (x,y)</span>
+        <span class="n">beam_zas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">offsets</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span> <span class="c1"># y=0 is zenith</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_single_beam_signal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">-</span>
+                                                   <span class="bp">self</span><span class="o">.</span><span class="n">offsets</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">],</span>
+                                                   <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y</span><span class="p">)[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">-</span>
+                                                   <span class="bp">self</span><span class="o">.</span><span class="n">offsets</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">],</span>
+                                                   <span class="n">beam_zas</span><span class="p">,</span>
+                                                   <span class="n">freqs</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="FFTFormedSincBeamModel.get_beam_widths"><a class="viewcode-back" href="../beam_model.html#beam_model.FFTFormedSincBeamModel.get_beam_widths">[docs]</a>    <span class="k">def</span> <span class="nf">get_beam_widths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beams</span><span class="p">,</span> <span class="n">freq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        For a list of beam IDs return the N/S and E/W beam widths.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        beams : int or array_like</span>
+<span class="sd">             IDs for the beams for which to calculate sensitivities.</span>
+<span class="sd">             Has shape (N).</span>
+<span class="sd">        freq: float or array_like</span>
+<span class="sd">             Frequency(ies) in MHz.</span>
+<span class="sd">             Has shape (K).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        ndarray</span>
+<span class="sd">            Beam width in ``x&#39;&#39; (E/W) and ``y&#39;&#39; (N/S) for each beam and frequency.</span>
+<span class="sd">            Has shape (N,K,2).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">freq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>
+        <span class="n">beams</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">beams</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">offsets</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">offsets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_beam_positions</span><span class="p">(</span><span class="n">beams</span><span class="p">,</span> <span class="n">freq</span><span class="p">)</span>
+        <span class="n">beam_zas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">offsets</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span> <span class="c1"># y=0 is zenith</span>
+
+        <span class="n">widths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_beam_fwhm</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>
+
+        <span class="n">x_widths</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">widths</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">beams</span><span class="p">))</span>
+        <span class="n">x_widths</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">beams</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">freq</span><span class="p">))</span>
+
+        <span class="n">y_widths</span> <span class="o">=</span> <span class="n">widths</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">beam_zas</span><span class="o">*</span><span class="n">_D2R</span><span class="p">)</span>
+
+        <span class="n">widths</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x_widths</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">y_widths</span><span class="o">.</span><span class="n">T</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">widths</span><span class="o">.</span><span class="n">T</span></div></div>
+
+<span class="k">def</span> <span class="nf">_get_precession</span><span class="p">(</span><span class="n">ra_deg</span><span class="p">,</span> <span class="n">dec_deg</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    For an observation time and ra, dec get amount ra and dec changed</span>
+<span class="sd">    due to precession.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    ra_deg : float</span>
+<span class="sd">        Right Ascention in degrees.</span>
+
+<span class="sd">    dec_deg : float</span>
+<span class="sd">        Declination in degrees.</span>
+
+<span class="sd">    time : datetime object</span>
+<span class="sd">        Time at observatory to perform transform.</span>
+
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    delta_ra : float</span>
+<span class="sd">        Difference in RA coordinate between J2000.0 epoch and given date in</span>
+<span class="sd">        degrees.</span>
+
+<span class="sd">    delta_dec : float</span>
+<span class="sd">        Difference in Dec coordinate between J2000.0 epoch and given date</span>
+<span class="sd">        in degrees.</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+
+<span class="sd">    Quick and dirty correction from BOB page 13. Could use a more accurate</span>
+<span class="sd">    correction from standard packages. Tried astropy.coordinate transforms</span>
+<span class="sd">    to apply correction but was very slow.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># get fractional year</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">toordinal</span><span class="p">()</span>
+    <span class="n">year_length</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">year</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">toordinal</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+    <span class="n">year_frac</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">year</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">toordinal</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">/</span> <span class="n">year_length</span>
+
+    <span class="n">T</span> <span class="o">=</span> <span class="p">(</span><span class="n">year_frac</span> <span class="o">-</span> <span class="mf">2000.</span><span class="p">)</span> <span class="o">/</span> <span class="mf">100.</span>
+
+    <span class="n">M</span> <span class="o">=</span> <span class="mf">1.2812323</span><span class="o">*</span><span class="n">T</span> <span class="o">+</span> <span class="mf">0.0003879</span><span class="o">*</span><span class="n">T</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mf">0.0000101</span><span class="o">*</span><span class="n">T</span><span class="o">**</span><span class="mi">3</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="mf">0.5567530</span><span class="o">*</span><span class="n">T</span> <span class="o">-</span> <span class="mf">0.0001185</span><span class="o">*</span><span class="n">T</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mf">0.0000116</span><span class="o">*</span><span class="n">T</span><span class="o">**</span><span class="mi">3</span>
+
+    <span class="n">delta_ra</span> <span class="o">=</span> <span class="n">M</span> <span class="o">+</span> <span class="n">N</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">ra_deg</span><span class="p">))</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">tan</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">dec_deg</span><span class="p">))</span>
+    <span class="n">delta_dec</span> <span class="o">=</span> <span class="n">N</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">ra_deg</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">delta_ra</span><span class="p">,</span> <span class="n">delta_dec</span>
+
+<span class="c1"># put this in yaml somehow?</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">chime-sensitivity</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Miles Cranmer, CHIME/FRB Collaboration.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

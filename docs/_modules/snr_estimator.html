@@ -1,0 +1,195 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>snr_estimator &#8212; chime-sensitivity 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for snr_estimator</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span> <span class="k">as</span> <span class="n">copy</span>
+<span class="kn">from</span> <span class="nn">astropy</span> <span class="k">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
+<span class="kn">from</span> <span class="nn">chime_exposure_map</span> <span class="k">import</span> <span class="n">exposure_lightcurve</span>
+<span class="kn">from</span> <span class="nn">get_temp_at_point</span> <span class="k">import</span> <span class="n">get_temp</span>
+<span class="kn">from</span> <span class="nn">reduce_atnf_cat</span> <span class="k">import</span> <span class="n">get_clean_ATNF_catalog</span><span class="p">,</span> <span class="n">select_CHIME_sources</span>
+<span class="kn">from</span> <span class="nn">load_beam_centers</span> <span class="k">import</span> <span class="n">get_beam_centers</span>
+
+<span class="n">CHIME_GAIN</span> <span class="o">=</span> <span class="mf">1.38</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">K</span><span class="o">/</span><span class="n">u</span><span class="o">.</span><span class="n">Jy</span>
+<span class="n">CHIME_BANDWIDTH</span> <span class="o">=</span> <span class="mf">400.</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span>
+
+<div class="viewcode-block" id="estimate_n_events"><a class="viewcode-back" href="../snr_estimator.html#snr_estimator.estimate_n_events">[docs]</a><span class="k">def</span> <span class="nf">estimate_n_events</span><span class="p">(</span>
+        <span class="n">snr_lightcurve</span><span class="p">,</span> <span class="n">resolution_minutes</span><span class="p">,</span> <span class="n">period</span><span class="p">,</span> <span class="n">snr_threshold</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+
+    <span class="c1"># Number of events above 10 SNR</span>
+    <span class="n">bursts_per_data_point</span> <span class="o">=</span> <span class="p">((</span><span class="n">resolution_minutes</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">min</span><span class="p">)</span><span class="o">/</span><span class="n">period</span><span class="p">)</span><span class="o">.</span><span class="n">si</span>
+    <span class="n">n_events</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">snr_lightcurve</span><span class="p">[</span><span class="n">snr_lightcurve</span> <span class="o">&gt;</span> <span class="mf">10.</span><span class="p">])</span><span class="o">*</span><span class="n">bursts_per_data_point</span>
+    <span class="k">return</span> <span class="n">n_events</span></div>
+
+<div class="viewcode-block" id="get_system_temperature"><a class="viewcode-back" href="../snr_estimator.html#snr_estimator.get_system_temperature">[docs]</a><span class="k">def</span> <span class="nf">get_system_temperature</span><span class="p">(</span><span class="n">frequencies</span><span class="p">):</span>
+    <span class="n">Tfeedloss</span> <span class="o">=</span> <span class="mf">7.</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">K</span>
+    <span class="n">Tant</span> <span class="o">=</span> <span class="mf">20.</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">K</span> <span class="o">+</span> <span class="mf">7.</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">K</span><span class="o">*</span><span class="p">(</span><span class="n">frequencies</span><span class="o">-</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="o">*</span><span class="mi">400</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="o">*</span><span class="mi">400</span><span class="p">)</span><span class="c1">#Estimated from fig 9 in email with Seth</span>
+    <span class="n">Tspillover</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">K</span> <span class="o">+</span> <span class="mf">3.</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">K</span><span class="o">*</span><span class="p">(</span><span class="n">frequencies</span><span class="o">-</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="o">*</span><span class="mi">400</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="o">*</span><span class="mi">400</span><span class="p">)</span> <span class="c1">#Estimated from fig 3 of Bandura</span>
+    <span class="n">Tsys</span> <span class="o">=</span> <span class="n">Tant</span><span class="o">+</span><span class="n">Tfeedloss</span><span class="o">+</span><span class="n">Tspillover</span>
+    <span class="k">return</span> <span class="n">Tsys</span></div>
+
+
+<div class="viewcode-block" id="linear_interpolate"><a class="viewcode-back" href="../snr_estimator.html#snr_estimator.linear_interpolate">[docs]</a><span class="k">def</span> <span class="nf">linear_interpolate</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">y0</span> <span class="o">+</span> <span class="p">(</span><span class="n">y1</span><span class="o">-</span><span class="n">y0</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">x0</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">x1</span><span class="o">-</span><span class="n">x0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="expected_snr_curve_pulsar"><a class="viewcode-back" href="../snr_estimator.html#snr_estimator.expected_snr_curve_pulsar">[docs]</a><span class="k">def</span> <span class="nf">expected_snr_curve_pulsar</span><span class="p">(</span>
+        <span class="n">pulsar</span><span class="p">,</span>
+        <span class="n">number_frequency_samples</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="n">beams</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1024</span><span class="p">)),</span>
+        <span class="n">beam_centers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">start_date</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="mi">2018</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">hour</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+        <span class="n">end_date</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="mi">2018</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">hour</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>        
+        <span class="n">resolution_minutes</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+
+    <span class="n">resolution</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">resolution_minutes</span><span class="p">)</span>
+    
+
+    <span class="k">if</span> <span class="n">beam_centers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">beam_centers</span> <span class="o">=</span> <span class="n">get_beam_centers</span><span class="p">()</span>
+
+    <span class="n">start_frequency</span> <span class="o">=</span> <span class="mi">400</span>
+    <span class="n">end_frequency</span> <span class="o">=</span> <span class="mi">800</span>
+    <span class="n">frequencies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
+            <span class="n">start_frequency</span><span class="p">,</span>
+            <span class="n">end_frequency</span><span class="p">,</span>
+            <span class="n">number_frequency_samples</span><span class="p">)</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span>
+
+    <span class="n">Tsys</span> <span class="o">=</span> <span class="n">get_system_temperature</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)</span>
+
+    <span class="n">dec_injection</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;dec&#39;</span><span class="p">]</span>
+    <span class="n">ra_injection</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">24.</span><span class="o">*</span><span class="mf">360.</span>
+    <span class="n">period</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;p0&#39;</span><span class="p">]</span> <span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">s</span>
+    <span class="n">width</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;w50&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">ms</span>
+    <span class="n">fifty_percentile_width</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;w50&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">ms</span>
+    <span class="n">duty_cycle</span> <span class="o">=</span> <span class="p">(</span><span class="n">fifty_percentile_width</span><span class="o">/</span><span class="n">period</span><span class="p">)</span><span class="o">.</span><span class="n">si</span>
+
+    <span class="c1">#1.*u.mJy/duty_cycle</span>
+    <span class="n">fluxes</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">mJy</span><span class="o">*</span><span class="n">linear_interpolate</span><span class="p">(</span>
+        <span class="n">x</span><span class="o">=</span><span class="n">frequencies</span><span class="p">,</span>
+        <span class="n">x0</span><span class="o">=</span><span class="mi">400</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="p">,</span>
+        <span class="n">x1</span><span class="o">=</span><span class="mi">1400</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="p">,</span>
+        <span class="n">y0</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;s400&#39;</span><span class="p">]),</span>
+        <span class="n">y1</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;s1400&#39;</span><span class="p">]))</span><span class="o">/</span><span class="n">duty_cycle</span>
+    
+    <span class="c1">#TODO: Use great circle angle in the projection</span>
+    <span class="n">projection</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">((</span><span class="mf">49.5</span><span class="o">-</span><span class="n">dec_injection</span><span class="p">)</span><span class="o">/</span><span class="mf">180.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+    <span class="n">snr_multiplier</span> <span class="o">=</span> <span class="p">(</span><span class="n">CHIME_GAIN</span><span class="o">*</span><span class="n">fluxes</span><span class="o">*</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">width</span><span class="o">*</span><span class="n">CHIME_BANDWIDTH</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">0.5</span><span class="p">))</span><span class="o">.</span><span class="n">si</span><span class="o">*</span><span class="n">projection</span>
+    <span class="n">width</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;w50&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">ms</span> <span class="c1">#The 50% level</span>
+    
+    <span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
+        <span class="n">ra_injection</span><span class="p">,</span>
+        <span class="n">dec_injection</span><span class="p">,</span>
+        <span class="n">start_date</span><span class="p">,</span>
+        <span class="n">end_date</span><span class="p">,</span>
+        <span class="n">resolution</span><span class="p">,</span>
+        <span class="n">beams</span><span class="p">,</span>
+        <span class="n">frequencies</span><span class="p">,</span>
+        <span class="n">beam_centers</span><span class="p">)</span>
+    
+    <span class="n">deg_to_rad</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">deg</span><span class="p">:</span> <span class="n">deg</span><span class="o">/</span><span class="mf">180.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+    <span class="n">Tsky</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">K</span><span class="o">*</span><span class="n">get_temp</span><span class="p">(</span><span class="n">deg_to_rad</span><span class="p">(</span><span class="n">ra_injection</span><span class="p">),</span> <span class="n">deg_to_rad</span><span class="p">(</span><span class="n">dec_injection</span><span class="p">),</span> <span class="p">(</span><span class="n">frequencies</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="p">))</span><span class="o">.</span><span class="n">si</span><span class="p">)</span>
+    <span class="n">snr_lightcurve</span> <span class="o">=</span> <span class="p">(</span><span class="n">lightcurve</span><span class="o">*</span><span class="n">snr_multiplier</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span><span class="o">/</span><span class="p">(</span><span class="n">Tsky</span><span class="o">+</span><span class="n">Tsys</span><span class="p">))</span><span class="o">.</span><span class="n">si</span>
+
+
+    <span class="c1"># Calculate SNR expected over time</span>
+    <span class="n">total_lightcurve</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">snr_lightcurve</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+    <span class="c1"># Return lightcurve SNR</span>
+    <span class="k">return</span> <span class="n">total_lightcurve</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">chime-sensitivity</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Miles Cranmer, CHIME/FRB Collaboration.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

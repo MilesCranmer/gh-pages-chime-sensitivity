@@ -1,0 +1,357 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>load_beam_centers &#8212; chime-sensitivity 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for load_beam_centers</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="get_beam_centers"><a class="viewcode-back" href="../load_beam_centers.html#load_beam_centers.get_beam_centers">[docs]</a><span class="k">def</span> <span class="nf">get_beam_centers</span><span class="p">():</span>
+    <span class="n">beam_centers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">90.0</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">82.8333566031</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">79.8582066343</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">77.5707428675</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">75.6384884371</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">73.9327481459</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">72.3875609296</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">70.9637666336</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">69.6358651937</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">68.3861542503</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">67.2017519003</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">66.0729385111</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">64.9921667653</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">63.9534376395</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">62.9518894536</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">61.9835173032</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">61.0449756281</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">60.1334356612</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">59.2464801919</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">58.3820243622</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">57.5382550328</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">56.7135836617</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">55.9066091886</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">55.1160884446</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">54.3409123039</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">53.5800862714</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">52.8327145387</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">52.0979867787</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">51.3751671269</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">50.6635849213</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">49.96262687</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">49.2717303874</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">48.5903778907</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">47.9180918955</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">47.2544307753</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">46.5989850802</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">45.9513743259</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">45.3112441831</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">44.678264006</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">44.0521246531</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">43.4325365578</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">42.8192280154</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">42.2119436575</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">41.6104430886</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">41.0144996657</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">40.4238994015</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">39.838439977</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">39.257929851</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">38.6821874535</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">38.1110404553</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">37.5443251038</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">36.9818856191</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">36.4235736423</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">35.869247732</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">35.318772903</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">34.7720202038</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">34.2288663278</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">33.6891932562</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">33.1528879286</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">32.6198419393</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">32.0899512563</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">31.5631159616</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">31.0392400104</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">30.5182310075</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">30.0</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">29.4844612837</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">28.9715322237</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">28.4611330865</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">27.9531868834</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">27.4476192242</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">26.9443581805</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">26.4433341571</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">25.9444797724</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">25.4477297449</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">24.9530207877</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">24.460291509</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">23.9694823178</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">23.4805353358</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">22.9933943143</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">22.5080045552</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">22.024312837</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">21.5422673444</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">21.0618176016</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">20.5829144101</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">20.1055097879</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">19.6295569139</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">19.1550100736</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">18.6818246077</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">18.2099568643</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">17.7393641517</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">17.270004695</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">16.8018375934</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">16.3348227807</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">15.8689209862</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">15.4040936987</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">14.9403031309</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">14.4775121859</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">14.0156844252</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">13.5547840372</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">13.0947758081</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">12.635625093</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">12.1772977884</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">11.7197603058</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">11.262979546</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">10.8069228749</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">10.3515580989</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">9.89685344282</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">9.4427775268</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">8.98929934516</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">8.53638824525</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">8.0840139071</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">7.63214632366</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">7.18075578146</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">6.72981284183</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">6.27928832255</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">5.8291532799</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">5.37937899111</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">4.92993693718</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">4.48079878598</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">4.03193637569</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">3.58332169847</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">3.13492688442</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">2.68672418569</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">2.23868596084</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">1.79078465933</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">1.34299280614</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">0.89528298657</span><span class="p">,</span>
+        <span class="o">-</span><span class="mf">0.44762783103</span><span class="p">,</span>
+        <span class="mf">0.0</span><span class="p">,</span>
+        <span class="mf">0.44762783103</span><span class="p">,</span>
+        <span class="mf">0.89528298657</span><span class="p">,</span>
+        <span class="mf">1.34299280614</span><span class="p">,</span>
+        <span class="mf">1.79078465933</span><span class="p">,</span>
+        <span class="mf">2.23868596084</span><span class="p">,</span>
+        <span class="mf">2.68672418569</span><span class="p">,</span>
+        <span class="mf">3.13492688442</span><span class="p">,</span>
+        <span class="mf">3.58332169847</span><span class="p">,</span>
+        <span class="mf">4.03193637569</span><span class="p">,</span>
+        <span class="mf">4.48079878598</span><span class="p">,</span>
+        <span class="mf">4.92993693718</span><span class="p">,</span>
+        <span class="mf">5.37937899111</span><span class="p">,</span>
+        <span class="mf">5.8291532799</span><span class="p">,</span>
+        <span class="mf">6.27928832255</span><span class="p">,</span>
+        <span class="mf">6.72981284183</span><span class="p">,</span>
+        <span class="mf">7.18075578146</span><span class="p">,</span>
+        <span class="mf">7.63214632366</span><span class="p">,</span>
+        <span class="mf">8.0840139071</span><span class="p">,</span>
+        <span class="mf">8.53638824525</span><span class="p">,</span>
+        <span class="mf">8.98929934516</span><span class="p">,</span>
+        <span class="mf">9.4427775268</span><span class="p">,</span>
+        <span class="mf">9.89685344282</span><span class="p">,</span>
+        <span class="mf">10.3515580989</span><span class="p">,</span>
+        <span class="mf">10.8069228749</span><span class="p">,</span>
+        <span class="mf">11.262979546</span><span class="p">,</span>
+        <span class="mf">11.7197603058</span><span class="p">,</span>
+        <span class="mf">12.1772977884</span><span class="p">,</span>
+        <span class="mf">12.635625093</span><span class="p">,</span>
+        <span class="mf">13.0947758081</span><span class="p">,</span>
+        <span class="mf">13.5547840372</span><span class="p">,</span>
+        <span class="mf">14.0156844252</span><span class="p">,</span>
+        <span class="mf">14.4775121859</span><span class="p">,</span>
+        <span class="mf">14.9403031309</span><span class="p">,</span>
+        <span class="mf">15.4040936987</span><span class="p">,</span>
+        <span class="mf">15.8689209862</span><span class="p">,</span>
+        <span class="mf">16.3348227807</span><span class="p">,</span>
+        <span class="mf">16.8018375934</span><span class="p">,</span>
+        <span class="mf">17.270004695</span><span class="p">,</span>
+        <span class="mf">17.7393641517</span><span class="p">,</span>
+        <span class="mf">18.2099568643</span><span class="p">,</span>
+        <span class="mf">18.6818246077</span><span class="p">,</span>
+        <span class="mf">19.1550100736</span><span class="p">,</span>
+        <span class="mf">19.6295569139</span><span class="p">,</span>
+        <span class="mf">20.1055097879</span><span class="p">,</span>
+        <span class="mf">20.5829144101</span><span class="p">,</span>
+        <span class="mf">21.0618176016</span><span class="p">,</span>
+        <span class="mf">21.5422673444</span><span class="p">,</span>
+        <span class="mf">22.024312837</span><span class="p">,</span>
+        <span class="mf">22.5080045552</span><span class="p">,</span>
+        <span class="mf">22.9933943143</span><span class="p">,</span>
+        <span class="mf">23.4805353358</span><span class="p">,</span>
+        <span class="mf">23.9694823178</span><span class="p">,</span>
+        <span class="mf">24.460291509</span><span class="p">,</span>
+        <span class="mf">24.9530207877</span><span class="p">,</span>
+        <span class="mf">25.4477297449</span><span class="p">,</span>
+        <span class="mf">25.9444797724</span><span class="p">,</span>
+        <span class="mf">26.4433341571</span><span class="p">,</span>
+        <span class="mf">26.9443581805</span><span class="p">,</span>
+        <span class="mf">27.4476192242</span><span class="p">,</span>
+        <span class="mf">27.9531868834</span><span class="p">,</span>
+        <span class="mf">28.4611330865</span><span class="p">,</span>
+        <span class="mf">28.9715322237</span><span class="p">,</span>
+        <span class="mf">29.4844612837</span><span class="p">,</span>
+        <span class="mf">30.0</span><span class="p">,</span>
+        <span class="mf">30.5182310075</span><span class="p">,</span>
+        <span class="mf">31.0392400104</span><span class="p">,</span>
+        <span class="mf">31.5631159616</span><span class="p">,</span>
+        <span class="mf">32.0899512563</span><span class="p">,</span>
+        <span class="mf">32.6198419393</span><span class="p">,</span>
+        <span class="mf">33.1528879286</span><span class="p">,</span>
+        <span class="mf">33.6891932562</span><span class="p">,</span>
+        <span class="mf">34.2288663278</span><span class="p">,</span>
+        <span class="mf">34.7720202038</span><span class="p">,</span>
+        <span class="mf">35.318772903</span><span class="p">,</span>
+        <span class="mf">35.869247732</span><span class="p">,</span>
+        <span class="mf">36.4235736423</span><span class="p">,</span>
+        <span class="mf">36.9818856191</span><span class="p">,</span>
+        <span class="mf">37.5443251038</span><span class="p">,</span>
+        <span class="mf">38.1110404553</span><span class="p">,</span>
+        <span class="mf">38.6821874535</span><span class="p">,</span>
+        <span class="mf">39.257929851</span><span class="p">,</span>
+        <span class="mf">39.838439977</span><span class="p">,</span>
+        <span class="mf">40.4238994015</span><span class="p">,</span>
+        <span class="mf">41.0144996657</span><span class="p">,</span>
+        <span class="mf">41.6104430886</span><span class="p">,</span>
+        <span class="mf">42.2119436575</span><span class="p">,</span>
+        <span class="mf">42.8192280154</span><span class="p">,</span>
+        <span class="mf">43.4325365578</span><span class="p">,</span>
+        <span class="mf">44.0521246531</span><span class="p">,</span>
+        <span class="mf">44.678264006</span><span class="p">,</span>
+        <span class="mf">45.3112441831</span><span class="p">,</span>
+        <span class="mf">45.9513743259</span><span class="p">,</span>
+        <span class="mf">46.5989850802</span><span class="p">,</span>
+        <span class="mf">47.2544307753</span><span class="p">,</span>
+        <span class="mf">47.9180918955</span><span class="p">,</span>
+        <span class="mf">48.5903778907</span><span class="p">,</span>
+        <span class="mf">49.2717303874</span><span class="p">,</span>
+        <span class="mf">49.96262687</span><span class="p">,</span>
+        <span class="mf">50.6635849213</span><span class="p">,</span>
+        <span class="mf">51.3751671269</span><span class="p">,</span>
+        <span class="mf">52.0979867787</span><span class="p">,</span>
+        <span class="mf">52.8327145387</span><span class="p">,</span>
+        <span class="mf">53.5800862714</span><span class="p">,</span>
+        <span class="mf">54.3409123039</span><span class="p">,</span>
+        <span class="mf">55.1160884446</span><span class="p">,</span>
+        <span class="mf">55.9066091886</span><span class="p">,</span>
+        <span class="mf">56.7135836617</span><span class="p">,</span>
+        <span class="mf">57.5382550328</span><span class="p">,</span>
+        <span class="mf">58.3820243622</span><span class="p">,</span>
+        <span class="mf">59.2464801919</span><span class="p">,</span>
+        <span class="mf">60.1334356612</span><span class="p">,</span>
+        <span class="mf">61.0449756281</span><span class="p">,</span>
+        <span class="mf">61.9835173032</span><span class="p">,</span>
+        <span class="mf">62.9518894536</span><span class="p">,</span>
+        <span class="mf">63.9534376395</span><span class="p">,</span>
+        <span class="mf">64.9921667653</span><span class="p">,</span>
+        <span class="mf">66.0729385111</span><span class="p">,</span>
+        <span class="mf">67.2017519003</span><span class="p">,</span>
+        <span class="mf">68.3861542503</span><span class="p">,</span>
+        <span class="mf">69.6358651937</span><span class="p">,</span>
+        <span class="mf">70.9637666336</span><span class="p">,</span>
+        <span class="mf">72.3875609296</span><span class="p">,</span>
+        <span class="mf">73.9327481459</span><span class="p">,</span>
+        <span class="mf">75.6384884371</span><span class="p">,</span>
+        <span class="mf">77.5707428675</span><span class="p">,</span>
+        <span class="mf">79.8582066343</span><span class="p">,</span>
+        <span class="mf">82.8333566031</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">beam_centers</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">chime-sensitivity</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Miles Cranmer, CHIME/FRB Collaboration.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

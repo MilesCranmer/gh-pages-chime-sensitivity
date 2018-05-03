@@ -1,0 +1,228 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>reduce_atnf_cat &#8212; chime-sensitivity 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for reduce_atnf_cat</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<div class="viewcode-block" id="get_clean_ATNF_catalog"><a class="viewcode-back" href="../reduce_atnf_cat.html#reduce_atnf_cat.get_clean_ATNF_catalog">[docs]</a><span class="k">def</span> <span class="nf">get_clean_ATNF_catalog</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="n">ATNF_DATA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span>
+                  <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot; ||| &quot;</span><span class="p">,</span> <span class="n">skip_header</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                  <span class="n">usecols</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">21</span><span class="p">,</span> <span class="mi">24</span><span class="p">),</span> <span class="c1">#Skip errors and references</span>
+                  <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">ATNF_CAT</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">ATNF_DATA</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span>
+            <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;ra&#39;</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">,</span> <span class="s1">&#39;p0&#39;</span><span class="p">,</span> <span class="s1">&#39;dm&#39;</span><span class="p">,</span> <span class="s1">&#39;w50&#39;</span><span class="p">,</span> <span class="s1">&#39;s400&#39;</span><span class="p">,</span> <span class="s1">&#39;s1400&#39;</span>
+        <span class="p">])</span>
+
+
+
+    <span class="c1"># # Snip rows with W50 missing, DM missing, P0 missing, s500/s1400 missing (OR)</span>
+
+    <span class="n">new_cat</span> <span class="o">=</span> <span class="n">ATNF_CAT</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">new_cat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">new_cat</span><span class="p">[</span><span class="s1">&#39;p0&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">new_cat</span><span class="p">[</span><span class="s1">&#39;p0&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">new_cat</span><span class="p">[</span><span class="s1">&#39;p0&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">new_cat</span><span class="p">[</span><span class="s1">&#39;dm&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">new_cat</span><span class="p">[</span><span class="s1">&#39;dm&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">new_cat</span><span class="p">[</span><span class="s1">&#39;dm&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">new_cat</span><span class="p">[</span><span class="s1">&#39;w50&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">new_cat</span><span class="p">[</span><span class="s1">&#39;w50&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">new_cat</span><span class="p">[</span><span class="s1">&#39;w50&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">new_cat</span><span class="p">[</span><span class="s1">&#39;s400&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">new_cat</span><span class="p">[</span><span class="s1">&#39;s400&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">new_cat</span><span class="p">[</span><span class="s1">&#39;s400&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">new_cat</span><span class="p">[</span><span class="s1">&#39;s1400&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">new_cat</span><span class="p">[</span><span class="s1">&#39;s1400&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">new_cat</span><span class="p">[</span><span class="s1">&#39;s1400&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">)</span>
+    <span class="n">new_cat</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">new_cat</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">string_ddeg_to_float</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s2">&quot;\d+&quot;</span><span class="p">,</span> <span class="n">string</span><span class="p">)</span>
+        <span class="n">float_parts</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">part</span><span class="p">)</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">float_parts</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span>
+        <span class="n">number</span> <span class="o">=</span> <span class="n">float_parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span>    <span class="n">float_parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mf">60.0</span><span class="o">+</span>    <span class="n">float_parts</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="mf">3600.</span><span class="o">+</span>    <span class="n">float_parts</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mf">10.0</span><span class="o">**</span><span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span><span class="o">/</span><span class="mf">3600.</span>
+        <span class="k">if</span> <span class="n">string</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;-&#39;</span><span class="p">:</span>
+            <span class="n">number</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">string</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;+&#39;</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span>
+        <span class="k">return</span> <span class="n">number</span>
+
+    <span class="k">def</span> <span class="nf">failsafe_string_ddeg</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s2">&quot;\d+&quot;</span><span class="p">,</span> <span class="n">string</span><span class="p">)</span>
+        <span class="n">float_parts</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">part</span><span class="p">)</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">float_parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">4</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">float_parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span>
+        <span class="n">number</span> <span class="o">=</span> <span class="n">float_parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">float_parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">number</span> <span class="o">+=</span> <span class="n">float_parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mf">60.0</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">float_parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">number</span> <span class="o">+=</span> <span class="n">float_parts</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="mf">3600.</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">float_parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">number</span> <span class="o">+=</span> <span class="n">float_parts</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mf">10.0</span><span class="o">**</span><span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span><span class="o">/</span><span class="mf">3600.</span>
+        <span class="k">if</span> <span class="n">string</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;-&#39;</span><span class="p">:</span>
+            <span class="n">number</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">string</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;+&#39;</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span>
+        <span class="k">return</span> <span class="n">number</span>
+
+    <span class="k">def</span> <span class="nf">string_dhour_to_float</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s2">&quot;\d+&quot;</span><span class="p">,</span> <span class="n">string</span><span class="p">)</span>
+        <span class="n">float_parts</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">part</span><span class="p">)</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">float_parts</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span>
+        <span class="n">number</span> <span class="o">=</span> <span class="n">float_parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span>    <span class="n">float_parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mf">60.</span><span class="o">+</span>    <span class="n">float_parts</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mf">60.</span><span class="o">*</span><span class="mf">60.</span><span class="p">)</span><span class="o">+</span>    <span class="n">float_parts</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mf">10.0</span><span class="o">**</span><span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="mf">60.</span><span class="o">*</span><span class="mf">60.</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">number</span>
+
+    <span class="k">def</span> <span class="nf">failsafe_string_dhour</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s2">&quot;\d+&quot;</span><span class="p">,</span> <span class="n">string</span><span class="p">)</span>
+        <span class="n">float_parts</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">part</span><span class="p">)</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">float_parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">4</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">float_parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span>
+        <span class="n">number</span> <span class="o">=</span> <span class="n">float_parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">float_parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">number</span> <span class="o">+=</span> <span class="n">float_parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mf">60.</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">float_parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">number</span> <span class="o">+=</span> <span class="n">float_parts</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mf">60.</span><span class="o">*</span><span class="mf">60.</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">float_parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">number</span> <span class="o">+=</span> <span class="n">float_parts</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mf">10.0</span><span class="o">**</span><span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="mf">60.</span><span class="o">*</span><span class="mf">60.</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">number</span>
+
+    <span class="n">new_new_cat</span> <span class="o">=</span> <span class="n">new_cat</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">new_new_cat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">new_new_cat</span><span class="p">[</span><span class="s1">&#39;dec&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">failsafe_string_ddeg</span><span class="p">(</span><span class="n">new_new_cat</span><span class="p">[</span><span class="s1">&#39;dec&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">new_new_cat</span><span class="p">[</span><span class="s1">&#39;dec&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">new_new_cat</span><span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">failsafe_string_dhour</span><span class="p">(</span><span class="n">new_new_cat</span><span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">new_new_cat</span><span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">)</span>
+
+    <span class="n">new_new_cat</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">new_new_cat</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">new_new_cat</span></div>
+
+<div class="viewcode-block" id="select_CHIME_sources"><a class="viewcode-back" href="../reduce_atnf_cat.html#reduce_atnf_cat.select_CHIME_sources">[docs]</a><span class="k">def</span> <span class="nf">select_CHIME_sources</span><span class="p">(</span><span class="n">catalog</span><span class="p">):</span>
+    <span class="n">CHIME_SOURCES</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;J2215+1538&#39;</span><span class="p">,</span> <span class="s1">&#39;J1907+0345&#39;</span><span class="p">,</span> <span class="s1">&#39;B0136+57&#39;</span><span class="p">,</span> <span class="s1">&#39;B0656+14&#39;</span><span class="p">,</span> <span class="s1">&#39;B0355+54&#39;</span><span class="p">,</span> <span class="s1">&#39;B2106+44&#39;</span><span class="p">,</span> <span class="s1">&#39;B2319+60&#39;</span><span class="p">,</span> <span class="s1">&#39;J2302+6028&#39;</span><span class="p">,</span> <span class="s1">&#39;B2217+47&#39;</span><span class="p">,</span> <span class="s1">&#39;J0058+6125&#39;</span><span class="p">,</span> <span class="s1">&#39;B1953+50&#39;</span><span class="p">,</span> <span class="s1">&#39;B1818-04&#39;</span><span class="p">,</span> <span class="s1">&#39;B0402+61&#39;</span><span class="p">,</span> <span class="s1">&#39;B2022+50&#39;</span><span class="p">,</span> <span class="s1">&#39;B2306+55&#39;</span><span class="p">,</span> <span class="s1">&#39;B0540+23&#39;</span><span class="p">,</span> <span class="s1">&#39;J0034-0534&#39;</span><span class="p">,</span> <span class="s1">&#39;B0320+39&#39;</span><span class="p">,</span> <span class="s1">&#39;J0408+551&#39;</span><span class="p">,</span> <span class="s1">&#39;B2020+28&#39;</span><span class="p">,</span> <span class="s1">&#39;B1839+56&#39;</span><span class="p">,</span> <span class="s1">&#39;B1933+16&#39;</span><span class="p">,</span> <span class="s1">&#39;B2255+58&#39;</span><span class="p">,</span> <span class="s1">&#39;J0544+20&#39;</span><span class="p">,</span> <span class="s1">&#39;B2310+42&#39;</span><span class="p">,</span> <span class="s1">&#39;B0329+54&#39;</span><span class="p">,</span> <span class="s1">&#39;B2045+56&#39;</span><span class="p">,</span> <span class="s1">&#39;J2229+6114&#39;</span><span class="p">,</span> <span class="s1">&#39;B2334+61&#39;</span><span class="p">,</span> <span class="s1">&#39;B0834+06&#39;</span><span class="p">,</span> <span class="s1">&#39;B1508+55&#39;</span><span class="p">,</span> <span class="s1">&#39;B0919+06&#39;</span><span class="p">,</span> <span class="s1">&#39;B0823+26&#39;</span><span class="p">,</span> <span class="s1">&#39;J2015+2524&#39;</span><span class="p">,</span> <span class="s1">&#39;B2021+51&#39;</span><span class="p">,</span> <span class="s1">&#39;B2111+46&#39;</span><span class="p">,</span> <span class="s1">&#39;J2019+2425&#39;</span><span class="p">,</span> <span class="s1">&#39;B0353+52&#39;</span><span class="p">,</span> <span class="s1">&#39;B0531+21&#39;</span><span class="p">,</span> <span class="s1">&#39;B2351+61&#39;</span><span class="p">,</span> <span class="s1">&#39;B1642-03&#39;</span><span class="p">,</span> <span class="s1">&#39;B0820+02&#39;</span><span class="p">]</span>
+
+    <span class="n">new_cat_elems</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">catalog</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        <span class="n">sum_var</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">CHIME_SOURCES</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">source</span><span class="p">:</span>
+                <span class="n">sum_var</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">sum_var</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">new_cat_elems</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">new_cat_elems</span><span class="p">)</span></div>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">chime-sensitivity</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Miles Cranmer, CHIME/FRB Collaboration.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

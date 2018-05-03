@@ -1,0 +1,617 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>chime_exposure_map &#8212; chime-sensitivity 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for chime_exposure_map</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Functions for exposure mapping &quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">ephem</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">from</span> <span class="nn">beam_model</span> <span class="k">import</span> <span class="n">FFTFormedSincBeamModel</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="k">import</span> <span class="n">Pool</span>
+<span class="kn">from</span> <span class="nn">load_beam_centers</span> <span class="k">import</span> <span class="n">get_beam_centers</span>
+
+<span class="n">BEAM_MODEL_CONFIG</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;Nx&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>                   <span class="c1"># int; number of EW beams</span>
+    <span class="s2">&quot;Ny&quot;</span><span class="p">:</span> <span class="mi">256</span><span class="p">,</span>                 <span class="c1"># int; number of NS beams</span>
+    <span class="s2">&quot;beam_sep_x&quot;</span><span class="p">:</span> <span class="mf">0.44762783103</span><span class="p">,</span> <span class="c1"># float; EW beam separation in degrees</span>
+    <span class="s2">&quot;feed_sep&quot;</span><span class="p">:</span> <span class="mf">0.3048</span><span class="p">,</span> <span class="c1"># float; Physical feed separation in meters</span>
+    <span class="s2">&quot;clamp_pad&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="c1"># int; Padding factor used in clamping</span>
+    <span class="s2">&quot;clamp_tile&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="c1"># int; Tiling factor used in clamping</span>
+    <span class="s2">&quot;clamp_freq&quot;</span><span class="p">:</span> <span class="mf">495.</span><span class="p">}</span> <span class="c1"># int; Frequency for reference beams used in clamping</span>
+
+<div class="viewcode-block" id="generate_chime_ephem"><a class="viewcode-back" href="../chime_exposure_map.html#chime_exposure_map.generate_chime_ephem">[docs]</a><span class="k">def</span> <span class="nf">generate_chime_ephem</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate pyephem object for CHIME</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    ephem.Observer</span>
+<span class="sd">        Contains the coordinates for CHIME on Earth,</span>
+<span class="sd">        and is used to query for observer-based coordinates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">chime</span> <span class="o">=</span> <span class="n">ephem</span><span class="o">.</span><span class="n">Observer</span><span class="p">()</span>
+    <span class="c1">#49.321601N, -119.620149 (-W)</span>
+    <span class="c1">#elevation = 545 (TODO: Is this important?)</span>
+    <span class="n">chime</span><span class="o">.</span><span class="n">lat</span> <span class="o">=</span> <span class="s1">&#39;49.321601&#39;</span>
+    <span class="n">chime</span><span class="o">.</span><span class="n">lon</span> <span class="o">=</span> <span class="s1">&#39;-119.620149&#39;</span>
+
+    <span class="k">return</span> <span class="n">chime</span></div>
+
+<div class="viewcode-block" id="query_location_az_alt"><a class="viewcode-back" href="../chime_exposure_map.html#chime_exposure_map.query_location_az_alt">[docs]</a><span class="k">def</span> <span class="nf">query_location_az_alt</span><span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate az, alt given a date, ra, and dec</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    date : string</span>
+<span class="sd">       A string containing the date and time in</span>
+<span class="sd">       &quot;2018/01/25 15:00:30&quot; order, where the</span>
+<span class="sd">       time is given in UTC.</span>
+
+<span class="sd">    ra : ephem.Degrees</span>
+<span class="sd">        The right ascension of an object on the sky.</span>
+<span class="sd">        For example, ephem.Degrees(&#39;00:00:00.000&#39;)</span>
+
+<span class="sd">    dec : ephem.Degrees</span>
+<span class="sd">        The right ascension of an object on the sky.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    tuple</span>
+<span class="sd">        A float 2-tuple: (az, alt), in degrees,</span>
+<span class="sd">        representing the azimuth and altitude</span>
+<span class="sd">        of an object on the sky</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">chime</span> <span class="o">=</span> <span class="n">generate_chime_ephem</span><span class="p">()</span>
+    <span class="n">chime</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">date</span>
+
+    <span class="n">test_body</span> <span class="o">=</span> <span class="n">ephem</span><span class="o">.</span><span class="n">FixedBody</span><span class="p">()</span>
+    <span class="n">test_body</span><span class="o">.</span><span class="n">_ra</span> <span class="o">=</span> <span class="n">ra</span>
+    <span class="n">test_body</span><span class="o">.</span><span class="n">_dec</span> <span class="o">=</span> <span class="n">dec</span>
+
+    <span class="n">test_body</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">chime</span><span class="p">)</span>
+
+    <span class="n">az</span> <span class="o">=</span> <span class="mf">180.</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">test_body</span><span class="o">.</span><span class="n">az</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+    <span class="n">alt</span> <span class="o">=</span> <span class="mf">180.</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">test_body</span><span class="o">.</span><span class="n">alt</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">az</span><span class="p">,</span> <span class="n">alt</span></div>
+
+<div class="viewcode-block" id="exposure_lightcurve"><a class="viewcode-back" href="../chime_exposure_map.html#chime_exposure_map.exposure_lightcurve">[docs]</a><span class="k">def</span> <span class="nf">exposure_lightcurve</span><span class="p">(</span>
+        <span class="n">ra_degree</span><span class="p">,</span>
+        <span class="n">dec_degree</span><span class="p">,</span>
+        <span class="n">start_date</span><span class="p">,</span>
+        <span class="n">end_date</span><span class="p">,</span>
+        <span class="n">resolution</span><span class="p">,</span>
+        <span class="n">beam_ids</span><span class="p">,</span>
+        <span class="n">frequencies</span><span class="p">,</span>
+        <span class="n">beam_positions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate a timestream of exposure to a specific point</span>
+
+<span class="sd">    This uses the max sensitivity over the beams, rather than</span>
+<span class="sd">    a sum of sensitivities.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    ra_degree : float</span>
+<span class="sd">        The right ascension of an object on the sky.</span>
+<span class="sd">        In degrees.</span>
+
+<span class="sd">    dec_degree : float</span>
+<span class="sd">        The declination of an object on the sky.</span>
+<span class="sd">        In degrees.</span>
+
+<span class="sd">    start_date : datetime.datetime</span>
+<span class="sd">        The start of the timestream.</span>
+
+<span class="sd">    end_date : datetime.datetime</span>
+<span class="sd">        The end of the timestream.</span>
+
+<span class="sd">    resolution : datetime.timedelta</span>
+<span class="sd">        The sampling resolution of the timestream. This,</span>
+<span class="sd">        and the length of the observation, determines</span>
+<span class="sd">        how many samples will be returned in total</span>
+
+<span class="sd">    beam_ids : array_like</span>
+<span class="sd">        Shape (N,). List of beams in terms of their IDs which</span>
+<span class="sd">        will be included in the timestream. Length</span>
+<span class="sd">        N (integers can be in [0,1023]).</span>
+
+<span class="sd">    frequencies : array_like</span>
+<span class="sd">        Shape (F,). List of which frequencies to calculate sensitivity</span>
+<span class="sd">        for. Frequencies are floats given in terms of MHz.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        A float numpy.ndarray: (T, F), where T is the number of samples,</span>
+<span class="sd">        and F is the number of frequencies. The floats represent</span>
+<span class="sd">        the max sensitivity over all beams to the point</span>
+<span class="sd">        in the sky. The first sample</span>
+<span class="sd">        is at the start date, and the last sample is</span>
+<span class="sd">        at or before the end_date. Samples are spaced</span>
+<span class="sd">        according to the resolution provided.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#TODO: Update this docstring</span>
+    <span class="k">if</span> <span class="n">beam_positions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">beam_positions</span> <span class="o">=</span> <span class="n">get_beam_centers</span><span class="p">()</span>
+
+
+
+    <span class="n">curr_date</span> <span class="o">=</span> <span class="n">start_date</span>
+
+    <span class="n">beam_model</span> <span class="o">=</span> <span class="n">FFTFormedSincBeamModel</span><span class="p">(</span><span class="n">BEAM_MODEL_CONFIG</span><span class="p">)</span>
+
+    <span class="n">samples</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">end_date</span> <span class="o">-</span> <span class="n">start_date</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">/</span> <span class="n">resolution</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">time_of_samples</span> <span class="o">=</span> <span class="p">[</span><span class="n">curr_date</span> <span class="o">+</span> <span class="n">i</span><span class="o">*</span><span class="n">resolution</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">samples</span><span class="p">)]</span>
+    <span class="n">sensitivity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">samples</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)))</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">samples</span><span class="p">)):</span>
+
+        <span class="n">curr_date</span> <span class="o">=</span> <span class="n">time_of_samples</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="n">position</span> <span class="o">=</span> <span class="n">beam_model</span><span class="o">.</span><span class="n">get_position_from_equatorial</span><span class="p">(</span>
+            <span class="n">ra_degree</span><span class="p">,</span>
+            <span class="n">dec_degree</span><span class="p">,</span>
+            <span class="n">curr_date</span><span class="p">)</span>
+
+        <span class="n">all_sensitivites</span> <span class="o">=</span> <span class="n">beam_model</span><span class="o">.</span><span class="n">get_sensitivity</span><span class="p">(</span>
+            <span class="n">beam_ids</span><span class="p">,</span>
+            <span class="n">positions</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">position</span><span class="p">]),</span>
+            <span class="n">freqs</span><span class="o">=</span><span class="n">frequencies</span><span class="p">,</span>
+            <span class="n">beam_positions</span><span class="o">=</span><span class="n">beam_positions</span><span class="p">)</span>
+        <span class="n">max_sensitivity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">all_sensitivites</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">sensitivity</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">max_sensitivity</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sensitivity</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="call_for_exp_map2"><a class="viewcode-back" href="../chime_exposure_map.html#chime_exposure_map.call_for_exp_map2">[docs]</a><span class="k">class</span> <span class="nc">call_for_exp_map2</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">resolution</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_date</span> <span class="o">=</span> <span class="n">start_date</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_date</span> <span class="o">=</span> <span class="n">end_date</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span> <span class="o">=</span> <span class="n">resolution</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beam_ids</span> <span class="o">=</span> <span class="n">beam_ids</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span> <span class="o">=</span> <span class="n">frequencies</span>
+<div class="viewcode-block" id="call_for_exp_map2.f2"><a class="viewcode-back" href="../chime_exposure_map.html#chime_exposure_map.call_for_exp_map2.f2">[docs]</a>    <span class="k">def</span> <span class="nf">f2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputted</span><span class="p">):</span>
+        <span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
+            <span class="n">inputted</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">inputted</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start_date</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">end_date</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">beam_ids</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span><span class="p">)</span>
+        <span class="n">good_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lightcurve</span> <span class="o">&gt;</span> <span class="n">detection_threshold</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">good_samples</span></div></div>
+
+<div class="viewcode-block" id="f4"><a class="viewcode-back" href="../chime_exposure_map.html#chime_exposure_map.f4">[docs]</a><span class="k">def</span> <span class="nf">f4</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">resolution</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">,</span> <span class="n">detection_threshold</span><span class="p">,</span> <span class="n">inputted</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+    <span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
+        <span class="n">inputted</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">inputted</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">start_date</span><span class="p">,</span>
+        <span class="n">end_date</span><span class="p">,</span>
+        <span class="n">resolution</span><span class="p">,</span>
+        <span class="n">beam_ids</span><span class="p">,</span>
+        <span class="n">frequencies</span><span class="p">)</span>
+    <span class="c1">#TODO: Should this be a sum over 0th axis?</span>
+    <span class="n">good_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lightcurve</span> <span class="o">&gt;</span> <span class="n">detection_threshold</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">good_samples</span><span class="p">,</span> <span class="n">index</span></div>
+
+<div class="viewcode-block" id="f5"><a class="viewcode-back" href="../chime_exposure_map.html#chime_exposure_map.f5">[docs]</a><span class="k">def</span> <span class="nf">f5</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">resolution</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">,</span> <span class="n">detection_thresholds</span><span class="p">,</span> <span class="n">inputted</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+    <span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
+        <span class="n">inputted</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">inputted</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">start_date</span><span class="p">,</span>
+        <span class="n">end_date</span><span class="p">,</span>
+        <span class="n">resolution</span><span class="p">,</span>
+        <span class="n">beam_ids</span><span class="p">,</span>
+        <span class="n">frequencies</span><span class="p">)</span>
+    <span class="n">good_samples</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">threshold</span> <span class="ow">in</span> <span class="n">detection_thresholds</span><span class="p">:</span>
+        <span class="n">good_samples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lightcurve</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">good_samples</span><span class="p">),</span> <span class="n">index</span></div>
+
+<div class="viewcode-block" id="generate_exposure_map"><a class="viewcode-back" href="../chime_exposure_map.html#chime_exposure_map.generate_exposure_map">[docs]</a><span class="k">def</span> <span class="nf">generate_exposure_map</span><span class="p">(</span>
+        <span class="n">start_date</span><span class="p">,</span>
+        <span class="n">end_date</span><span class="p">,</span>
+        <span class="n">spatial_resolution</span><span class="p">,</span>
+        <span class="n">beam_ids</span><span class="p">,</span>
+        <span class="n">frequencies</span><span class="p">,</span>
+        <span class="n">detection_threshold</span><span class="p">,</span>
+        <span class="n">ra_lower</span><span class="p">,</span>
+        <span class="n">ra_upper</span><span class="p">,</span>
+        <span class="n">dec_lower</span><span class="p">,</span>
+        <span class="n">dec_upper</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate a timestream of exposure to a specific point</span>
+
+<span class="sd">    This uses the max sensitivity over the beams, rather than</span>
+<span class="sd">    a sum of sensitivities.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    start_date : datetime.datetime</span>
+<span class="sd">        The start of the map generation</span>
+
+<span class="sd">    end_date : datetime.datetime</span>
+<span class="sd">        The end time of the map generation.</span>
+
+<span class="sd">    spatial_resolution : float</span>
+<span class="sd">        The sampling resolution of the map in degrees.</span>
+
+<span class="sd">    beam_ids : array_like</span>
+<span class="sd">        Shape (N,). List of beams in terms of their IDs which</span>
+<span class="sd">        will be included in the timestream. Length</span>
+<span class="sd">        N (integers can be in [0,1023]).</span>
+
+<span class="sd">    frequencies : array_like</span>
+<span class="sd">        Shape (F,). List of which frequencies to calculate sensitivity</span>
+<span class="sd">        for. Frequencies are floats given in terms of MHz.</span>
+
+<span class="sd">    detection_threshold : float</span>
+<span class="sd">        The sensitivity (0-1) that is considered for a &quot;detection&quot;,</span>
+<span class="sd">        meaning the time spent with sensitivity &gt; _ for any beam</span>
+<span class="sd">        is considered &quot;detecting time,&quot; and is integrated over.</span>
+
+<span class="sd">    ra_lower : float</span>
+<span class="sd">        The right ascension lower-limit of the map</span>
+<span class="sd">        In degrees.</span>
+
+<span class="sd">    ra_upper : float</span>
+<span class="sd">        The right ascension upper-limit of the map</span>
+<span class="sd">        In degrees.</span>
+
+<span class="sd">    dec_lower : float</span>
+<span class="sd">        The declination lower-limit of the map</span>
+<span class="sd">        In degrees.</span>
+
+<span class="sd">    dec_upper : float</span>
+<span class="sd">        The declination upper-limit of the map</span>
+<span class="sd">        In degrees.</span>
+
+<span class="sd">    beam_ids : array_like</span>
+<span class="sd">        Shape (N,). List of beams in terms of their IDs which</span>
+<span class="sd">        will be included in the timestream. Length</span>
+<span class="sd">        N (integers can be in [0,1023]).</span>
+
+<span class="sd">    frequencies : array_like</span>
+<span class="sd">        Shape (F,). List of which frequencies to calculate sensitivity</span>
+<span class="sd">        for. Frequencies are floats given in terms of MHz.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        A float numpy.ndarray: (R, D, F), where R is the number of</span>
+<span class="sd">        right ascension samples on the map, D is the number of</span>
+<span class="sd">        declination samples on the map, and F is the number of</span>
+<span class="sd">        frequencies. The floats in the array represent</span>
+<span class="sd">        the minutes over all beams to the point</span>
+<span class="sd">        in the sky. The first sample</span>
+<span class="sd">        is at the start date, and the last sample is</span>
+<span class="sd">        at or before the end_date. Samples are spaced</span>
+<span class="sd">        according to the resolution provided.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">exposure_map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ra_lower</span><span class="p">,</span> <span class="n">ra_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">)),</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dec_lower</span><span class="p">,</span> <span class="n">dec_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">)),</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)))</span>
+
+    <span class="n">time_resolution</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ra</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ra_lower</span><span class="p">,</span> <span class="n">ra_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">dec</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dec_lower</span><span class="p">,</span> <span class="n">dec_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">)):</span>
+            <span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
+                <span class="n">ra</span><span class="p">,</span>
+                <span class="n">dec</span><span class="p">,</span>
+                <span class="n">start_date</span><span class="p">,</span>
+                <span class="n">end_date</span><span class="p">,</span>
+                <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                <span class="n">beam_ids</span><span class="p">,</span>
+                <span class="n">frequencies</span><span class="p">)</span>
+
+            <span class="n">good_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lightcurve</span> <span class="o">&gt;</span> <span class="n">detection_threshold</span><span class="p">)</span>
+            <span class="n">exposure_map</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">good_samples</span> <span class="o">*</span> <span class="mf">1.</span>
+            <span class="k">break</span>
+        <span class="k">break</span>
+    <span class="n">poses</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ra</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ra_lower</span><span class="p">,</span> <span class="n">ra_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">dec</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dec_lower</span><span class="p">,</span> <span class="n">dec_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">poses</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">))</span>
+
+
+    <span class="n">len_ra</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ra_lower</span><span class="p">,</span> <span class="n">ra_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">))</span>
+    <span class="n">len_dec</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dec_lower</span><span class="p">,</span> <span class="n">dec_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">))</span>
+    <span class="n">new_exp_maps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">poses</span><span class="p">))</span>
+    <span class="c1">#def update_exp_map(result):</span>
+        <span class="c1">#new_exp_maps[result[1]] = result[0]</span>
+
+    <span class="c1">#myclass = call_for_exp_map(start_date, end_date, time_resolution, beam_ids, frequencies)</span>
+    <span class="k">def</span> <span class="nf">f3</span><span class="p">(</span><span class="n">inputted</span><span class="p">):</span>
+        <span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
+            <span class="n">inputted</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">inputted</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">start_date</span><span class="p">,</span>
+            <span class="n">end_date</span><span class="p">,</span>
+            <span class="n">resolution</span><span class="p">,</span>
+            <span class="n">beam_ids</span><span class="p">,</span>
+            <span class="n">frequencies</span><span class="p">)</span>
+        <span class="n">good_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lightcurve</span> <span class="o">&gt;</span> <span class="n">detection_threshold</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">good_samples</span>
+    <span class="k">def</span> <span class="nf">call_back</span><span class="p">(</span><span class="n">result</span><span class="p">):</span>
+        <span class="n">new_exp_maps</span><span class="p">[</span><span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">p</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">poses</span><span class="p">)):</span>
+        <span class="c1">#def f4(start_date, end_date, resolution, beam_ids, frequencies, detection_threshold, inputted, index):</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">f4</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">time_resolution</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">,</span> <span class="n">detection_threshold</span><span class="p">,</span> <span class="n">poses</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">i</span><span class="p">),</span> <span class="n">callback</span><span class="o">=</span><span class="n">call_back</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ra</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ra_lower</span><span class="p">,</span> <span class="n">ra_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">dec</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dec_lower</span><span class="p">,</span> <span class="n">dec_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">exposure_map</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_exp_maps</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">len_dec</span> <span class="o">+</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.</span>
+
+    <span class="k">return</span> <span class="n">exposure_map</span></div>
+
+<div class="viewcode-block" id="generate_exposure_map_alt"><a class="viewcode-back" href="../chime_exposure_map.html#chime_exposure_map.generate_exposure_map_alt">[docs]</a><span class="k">def</span> <span class="nf">generate_exposure_map_alt</span><span class="p">(</span>
+        <span class="n">start_date</span><span class="p">,</span>
+        <span class="n">end_date</span><span class="p">,</span>
+        <span class="n">spatial_resolution</span><span class="p">,</span>
+        <span class="n">time_resolution</span><span class="p">,</span>
+        <span class="n">beam_ids</span><span class="p">,</span>
+        <span class="n">frequencies</span><span class="p">,</span>
+        <span class="n">detection_thresholds</span><span class="p">,</span>
+        <span class="n">ra_lower</span><span class="p">,</span>
+        <span class="n">ra_upper</span><span class="p">,</span>
+        <span class="n">dec_lower</span><span class="p">,</span>
+        <span class="n">dec_upper</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate a timestream of exposure to a specific point</span>
+
+<span class="sd">    This uses the max sensitivity over the beams, rather than</span>
+<span class="sd">    a sum of sensitivities.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    start_date : datetime.datetime</span>
+<span class="sd">        The start of the map generation</span>
+
+<span class="sd">    end_date : datetime.datetime</span>
+<span class="sd">        The end time of the map generation.</span>
+
+<span class="sd">    spatial_resolution : float</span>
+<span class="sd">        The sampling resolution of the map in degrees.</span>
+
+<span class="sd">    beam_ids : array_like</span>
+<span class="sd">        Shape (N,). List of beams in terms of their IDs which</span>
+<span class="sd">        will be included in the timestream. Length</span>
+<span class="sd">        N (integers can be in [0,1023]).</span>
+
+<span class="sd">    frequencies : array_like</span>
+<span class="sd">        Shape (F,). List of which frequencies to calculate sensitivity</span>
+<span class="sd">        for. Frequencies are floats given in terms of MHz.</span>
+
+<span class="sd">    detection_threshold : float</span>
+<span class="sd">        The sensitivity (0-1) that is considered for a &quot;detection&quot;,</span>
+<span class="sd">        meaning the time spent with sensitivity &gt; _ for any beam</span>
+<span class="sd">        is considered &quot;detecting time,&quot; and is integrated over.</span>
+
+<span class="sd">    ra_lower : float</span>
+<span class="sd">        The right ascension lower-limit of the map</span>
+<span class="sd">        In degrees.</span>
+
+<span class="sd">    ra_upper : float</span>
+<span class="sd">        The right ascension upper-limit of the map</span>
+<span class="sd">        In degrees.</span>
+
+<span class="sd">    dec_lower : float</span>
+<span class="sd">        The declination lower-limit of the map</span>
+<span class="sd">        In degrees.</span>
+
+<span class="sd">    dec_upper : float</span>
+<span class="sd">        The declination upper-limit of the map</span>
+<span class="sd">        In degrees.</span>
+
+<span class="sd">    beam_ids : array_like</span>
+<span class="sd">        Shape (N,). List of beams in terms of their IDs which</span>
+<span class="sd">        will be included in the timestream. Length</span>
+<span class="sd">        N (integers can be in [0,1023]).</span>
+
+<span class="sd">    frequencies : array_like</span>
+<span class="sd">        Shape (F,). List of which frequencies to calculate sensitivity</span>
+<span class="sd">        for. Frequencies are floats given in terms of MHz.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        A float numpy.ndarray: (R, D, F), where R is the number of</span>
+<span class="sd">        right ascension samples on the map, D is the number of</span>
+<span class="sd">        declination samples on the map, and F is the number of</span>
+<span class="sd">        frequencies. The floats in the array represent</span>
+<span class="sd">        the minutes over all beams to the point</span>
+<span class="sd">        in the sky. The first sample</span>
+<span class="sd">        is at the start date, and the last sample is</span>
+<span class="sd">        at or before the end_date. Samples are spaced</span>
+<span class="sd">        according to the resolution provided.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">exposure_map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ra_lower</span><span class="p">,</span> <span class="n">ra_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">)),</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dec_lower</span><span class="p">,</span> <span class="n">dec_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">)),</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">frequencies</span><span class="p">),</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">detection_thresholds</span><span class="p">)))</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ra</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ra_lower</span><span class="p">,</span> <span class="n">ra_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">dec</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dec_lower</span><span class="p">,</span> <span class="n">dec_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">)):</span>
+            <span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
+                <span class="n">ra</span><span class="p">,</span>
+                <span class="n">dec</span><span class="p">,</span>
+                <span class="n">start_date</span><span class="p">,</span>
+                <span class="n">end_date</span><span class="p">,</span>
+                <span class="n">time_resolution</span><span class="p">,</span>
+                <span class="n">beam_ids</span><span class="p">,</span>
+                <span class="n">frequencies</span><span class="p">)</span>
+
+            <span class="n">good_samples</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">threshold</span> <span class="ow">in</span> <span class="n">detection_thresholds</span><span class="p">:</span>
+                <span class="n">good_samples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lightcurve</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">))</span>
+            <span class="n">exposure_map</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">good_samples</span><span class="p">)[:]</span> <span class="o">*</span> <span class="mf">1.</span>
+            <span class="k">break</span>
+        <span class="k">break</span>
+    <span class="n">poses</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ra</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ra_lower</span><span class="p">,</span> <span class="n">ra_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">dec</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dec_lower</span><span class="p">,</span> <span class="n">dec_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">poses</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">))</span>
+
+
+    <span class="n">len_ra</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ra_lower</span><span class="p">,</span> <span class="n">ra_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">))</span>
+    <span class="n">len_dec</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dec_lower</span><span class="p">,</span> <span class="n">dec_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">))</span>
+    <span class="n">new_exp_maps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">poses</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">detection_thresholds</span><span class="p">)))</span>
+    <span class="c1">#def update_exp_map(result):</span>
+        <span class="c1">#new_exp_maps[result[1]] = result[0]</span>
+
+    <span class="c1">#myclass = call_for_exp_map(start_date, end_date, time_resolution, beam_ids, frequencies)</span>
+    <span class="k">def</span> <span class="nf">f3</span><span class="p">(</span><span class="n">inputted</span><span class="p">):</span>
+        <span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
+            <span class="n">inputted</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">inputted</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">start_date</span><span class="p">,</span>
+            <span class="n">end_date</span><span class="p">,</span>
+            <span class="n">resolution</span><span class="p">,</span>
+            <span class="n">beam_ids</span><span class="p">,</span>
+            <span class="n">frequencies</span><span class="p">)</span>
+        <span class="n">good_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lightcurve</span> <span class="o">&gt;</span> <span class="n">detection_threshold</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">good_samples</span>
+    <span class="k">def</span> <span class="nf">call_back</span><span class="p">(</span><span class="n">result</span><span class="p">):</span>
+        <span class="n">new_exp_maps</span><span class="p">[</span><span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">p</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">poses</span><span class="p">)):</span>
+        <span class="c1">#def f4(start_date, end_date, resolution, beam_ids, frequencies, detection_threshold, inputted, index):</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">f5</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">time_resolution</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">,</span> <span class="n">detection_thresholds</span><span class="p">,</span> <span class="n">poses</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">i</span><span class="p">),</span> <span class="n">callback</span><span class="o">=</span><span class="n">call_back</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ra</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ra_lower</span><span class="p">,</span> <span class="n">ra_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">dec</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dec_lower</span><span class="p">,</span> <span class="n">dec_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">exposure_map</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">new_exp_maps</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">len_dec</span> <span class="o">+</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">*</span> <span class="mf">1.</span>
+
+    <span class="k">return</span> <span class="n">exposure_map</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">chime-sensitivity</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Miles Cranmer, CHIME/FRB Collaboration.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
