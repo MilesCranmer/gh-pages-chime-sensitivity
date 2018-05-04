@@ -5,8 +5,8 @@ Sensitivity
    :maxdepth: 5
 
    beam_model
-   chime_exposure_map
    common_pulsars
+   exposure
    full_test
    generate_atnf_readable_cat
    get_temp_at_point

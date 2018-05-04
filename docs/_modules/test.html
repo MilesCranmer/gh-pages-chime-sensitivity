@@ -47,13 +47,13 @@
 <span class="kn">import</span> <span class="nn">datetime</span>
 <span class="kn">import</span> <span class="nn">ephem</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">chime_exposure_map</span> <span class="k">import</span> <span class="p">(</span>
+<span class="kn">from</span> <span class="nn">exposure</span> <span class="k">import</span> <span class="p">(</span>
     <span class="n">generate_chime_ephem</span><span class="p">,</span>
     <span class="n">query_location_az_alt</span><span class="p">,</span>
     <span class="n">exposure_lightcurve</span><span class="p">,</span>
     <span class="n">generate_exposure_map</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">common_pulsars</span> <span class="k">import</span> <span class="n">get_pulsar</span>
-<span class="kn">from</span> <span class="nn">snr_estimator</span> <span class="k">import</span> <span class="n">expected_snr_curve_pulsar</span>
+<span class="kn">from</span> <span class="nn">snr_estimator</span> <span class="k">import</span> <span class="n">expected_snr_curve_pulsar</span><span class="p">,</span> <span class="n">expected_snr_curve_generic</span>
 <span class="kn">from</span> <span class="nn">beam_model</span> <span class="k">import</span> <span class="n">BeamModel</span><span class="p">,</span> <span class="n">FFTFormedSincBeamModel</span>
 
 <span class="n">BEAM_MODEL_CONFIG</span> <span class="o">=</span> <span class="p">{</span>
@@ -327,7 +327,26 @@
         <span class="sd">&quot;&quot;&quot; Expect b0329 to have greater than 800 SNR &quot;&quot;&quot;</span>
         <span class="n">b0329</span> <span class="o">=</span> <span class="n">get_pulsar</span><span class="p">(</span><span class="s1">&#39;B0329+54&#39;</span><span class="p">)</span>
         <span class="n">max_snr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">expected_snr_curve_pulsar</span><span class="p">(</span><span class="n">b0329</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">assertGreater</span><span class="p">(</span><span class="n">max_snr</span><span class="p">,</span> <span class="mi">800</span><span class="p">)</span></div></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertGreater</span><span class="p">(</span><span class="n">max_snr</span><span class="p">,</span> <span class="mi">800</span><span class="p">)</span></div>
+<div class="viewcode-block" id="FullSystemTest.test_snr_output_generic"><a class="viewcode-back" href="../test.html#test.FullSystemTest.test_snr_output_generic">[docs]</a>    <span class="k">def</span> <span class="nf">test_snr_output_generic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Expect a generic source similar to B0329 to have a large SNR &quot;&quot;&quot;</span>
+        <span class="n">frequencies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="mi">800</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span> <span class="c1">#MHz</span>
+        <span class="n">constant_flux</span> <span class="o">=</span> <span class="mi">15000</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)</span> <span class="c1">#mJy</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="mi">3</span> <span class="c1">#ms</span>
+        <span class="n">dm</span> <span class="o">=</span> <span class="mi">60</span>
+        <span class="n">snr_lightcurve</span> <span class="o">=</span> <span class="n">expected_snr_curve_generic</span><span class="p">(</span>
+            <span class="n">frequencies</span><span class="o">=</span><span class="n">frequencies</span><span class="p">,</span>
+            <span class="n">fluxes</span><span class="o">=</span><span class="n">constant_flux</span><span class="p">,</span>
+            <span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">,</span>
+            <span class="n">dm</span><span class="o">=</span><span class="n">dm</span><span class="p">,</span>
+            <span class="n">ra</span><span class="o">=</span><span class="mf">14.</span><span class="p">,</span>
+            <span class="n">dec</span><span class="o">=</span><span class="mf">55.</span>
+            <span class="p">)</span>
+        <span class="n">max_snr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">snr_lightcurve</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertGreater</span><span class="p">(</span><span class="n">max_snr</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+        <span class="n">zero_time</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">snr_lightcurve</span><span class="p">[</span><span class="n">snr_lightcurve</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">])</span>
+        <span class="n">nonzero_time</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">snr_lightcurve</span><span class="p">)</span> <span class="o">-</span> <span class="n">zero_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertGreater</span><span class="p">(</span><span class="n">zero_time</span><span class="p">,</span> <span class="n">nonzero_time</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="suite"><a class="viewcode-back" href="../test.html#test.suite">[docs]</a><span class="k">def</span> <span class="nf">suite</span><span class="p">():</span>

@@ -1,0 +1,317 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>exposure module &#8212; chime-sensitivity 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-exposure">
+<span id="exposure-module"></span><h1>exposure module<a class="headerlink" href="#module-exposure" title="Permalink to this headline">¶</a></h1>
+<p>Functions for exposure mapping</p>
+<dl class="class">
+<dt id="exposure.call_for_exp_map2">
+<em class="property">class </em><code class="descclassname">exposure.</code><code class="descname">call_for_exp_map2</code><span class="sig-paren">(</span><em>start_date</em>, <em>end_date</em>, <em>resolution</em>, <em>beam_ids</em>, <em>frequencies</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#call_for_exp_map2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.call_for_exp_map2" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="exposure.call_for_exp_map2.f2">
+<code class="descname">f2</code><span class="sig-paren">(</span><em>inputted</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#call_for_exp_map2.f2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.call_for_exp_map2.f2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="exposure.exposure_lightcurve">
+<code class="descclassname">exposure.</code><code class="descname">exposure_lightcurve</code><span class="sig-paren">(</span><em>ra_degree</em>, <em>dec_degree</em>, <em>start_date</em>, <em>end_date</em>, <em>resolution</em>, <em>beam_ids</em>, <em>frequencies</em>, <em>beam_positions=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#exposure_lightcurve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.exposure_lightcurve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a timestream of exposure to a specific point</p>
+<p>This uses the max sensitivity over the beams, rather than
+a sum of sensitivities.</p>
+<dl class="docutils">
+<dt>ra_degree <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The right ascension of an object on the sky.
+In degrees.</dd>
+<dt>dec_degree <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The declination of an object on the sky.
+In degrees.</dd>
+<dt>start_date <span class="classifier-delimiter">:</span> <span class="classifier">datetime.datetime</span></dt>
+<dd>The start of the timestream.</dd>
+<dt>end_date <span class="classifier-delimiter">:</span> <span class="classifier">datetime.datetime</span></dt>
+<dd>The end of the timestream.</dd>
+<dt>resolution <span class="classifier-delimiter">:</span> <span class="classifier">datetime.timedelta</span></dt>
+<dd>The sampling resolution of the timestream. This,
+and the length of the observation, determines
+how many samples will be returned in total</dd>
+<dt>beam_ids <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>Shape (N,). List of beams in terms of their IDs which
+will be included in the timestream. Length
+N (integers can be in [0,1023]).</dd>
+<dt>frequencies <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>Shape (F,). List of which frequencies to calculate sensitivity
+for. Frequencies are floats given in terms of MHz.</dd>
+<dt>beam_positions <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>Shape (256,). List of the y-positions of the center of every
+beam. By default, this is set by
+load_beam_centers.get_beam_centers.</dd>
+</dl>
+<dl class="docutils">
+<dt>numpy.ndarray</dt>
+<dd>A float numpy.ndarray of shape (T, F),
+where T is the number of samples,
+and F is the number of frequencies. The floats represent
+the max sensitivity over all beams to the point
+in the sky. The first sample
+is at the start date, and the last sample is
+at or before the end_date. Samples are spaced
+according to the resolution provided.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="exposure.f4">
+<code class="descclassname">exposure.</code><code class="descname">f4</code><span class="sig-paren">(</span><em>start_date</em>, <em>end_date</em>, <em>resolution</em>, <em>beam_ids</em>, <em>frequencies</em>, <em>detection_threshold</em>, <em>inputted</em>, <em>index</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#f4"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.f4" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="exposure.f5">
+<code class="descclassname">exposure.</code><code class="descname">f5</code><span class="sig-paren">(</span><em>start_date</em>, <em>end_date</em>, <em>resolution</em>, <em>beam_ids</em>, <em>frequencies</em>, <em>detection_thresholds</em>, <em>inputted</em>, <em>index</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#f5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.f5" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="exposure.generate_chime_ephem">
+<code class="descclassname">exposure.</code><code class="descname">generate_chime_ephem</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#generate_chime_ephem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.generate_chime_ephem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate pyephem object for CHIME</p>
+<dl class="docutils">
+<dt>ephem.Observer</dt>
+<dd>Contains the coordinates for CHIME on Earth,
+and is used to query for observer-based coordinates.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="exposure.generate_exposure_map">
+<code class="descclassname">exposure.</code><code class="descname">generate_exposure_map</code><span class="sig-paren">(</span><em>start_date</em>, <em>end_date</em>, <em>spatial_resolution</em>, <em>beam_ids</em>, <em>frequencies</em>, <em>detection_threshold</em>, <em>ra_lower</em>, <em>ra_upper</em>, <em>dec_lower</em>, <em>dec_upper</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#generate_exposure_map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.generate_exposure_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a timestream of exposure to a specific point</p>
+<p>This uses the max sensitivity over the beams, rather than
+a sum of sensitivities.</p>
+<dl class="docutils">
+<dt>start_date <span class="classifier-delimiter">:</span> <span class="classifier">datetime.datetime</span></dt>
+<dd>The start of the map generation</dd>
+<dt>end_date <span class="classifier-delimiter">:</span> <span class="classifier">datetime.datetime</span></dt>
+<dd>The end time of the map generation.</dd>
+<dt>spatial_resolution <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The sampling resolution of the map in degrees.</dd>
+<dt>beam_ids <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>Shape (N,). List of beams in terms of their IDs which
+will be included in the timestream. Length
+N (integers can be in [0,1023]).</dd>
+<dt>frequencies <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>Shape (F,). List of which frequencies to calculate sensitivity
+for. Frequencies are floats given in terms of MHz.</dd>
+<dt>detection_threshold <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The sensitivity (0-1) that is considered for a “detection”,
+meaning the time spent with sensitivity &gt; _ for any beam
+is considered “detecting time,” and is integrated over.</dd>
+<dt>ra_lower <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The right ascension lower-limit of the map
+In degrees.</dd>
+<dt>ra_upper <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The right ascension upper-limit of the map
+In degrees.</dd>
+<dt>dec_lower <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The declination lower-limit of the map
+In degrees.</dd>
+<dt>dec_upper <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The declination upper-limit of the map
+In degrees.</dd>
+<dt>beam_ids <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>Shape (N,). List of beams in terms of their IDs which
+will be included in the timestream. Length
+N (integers can be in [0,1023]).</dd>
+<dt>frequencies <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>Shape (F,). List of which frequencies to calculate sensitivity
+for. Frequencies are floats given in terms of MHz.</dd>
+</dl>
+<dl class="docutils">
+<dt>numpy.ndarray</dt>
+<dd>A float numpy.ndarray: (R, D, F), where R is the number of
+right ascension samples on the map, D is the number of
+declination samples on the map, and F is the number of
+frequencies. The floats in the array represent
+the minutes over all beams to the point
+in the sky. The first sample
+is at the start date, and the last sample is
+at or before the end_date. Samples are spaced
+according to the resolution provided.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="exposure.generate_exposure_map_alt">
+<code class="descclassname">exposure.</code><code class="descname">generate_exposure_map_alt</code><span class="sig-paren">(</span><em>start_date</em>, <em>end_date</em>, <em>spatial_resolution</em>, <em>time_resolution</em>, <em>beam_ids</em>, <em>frequencies</em>, <em>detection_thresholds</em>, <em>ra_lower</em>, <em>ra_upper</em>, <em>dec_lower</em>, <em>dec_upper</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#generate_exposure_map_alt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.generate_exposure_map_alt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a timestream of exposure to a specific point</p>
+<p>This uses the max sensitivity over the beams, rather than
+a sum of sensitivities.</p>
+<dl class="docutils">
+<dt>start_date <span class="classifier-delimiter">:</span> <span class="classifier">datetime.datetime</span></dt>
+<dd>The start of the map generation</dd>
+<dt>end_date <span class="classifier-delimiter">:</span> <span class="classifier">datetime.datetime</span></dt>
+<dd>The end time of the map generation.</dd>
+<dt>spatial_resolution <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The sampling resolution of the map in degrees.</dd>
+<dt>beam_ids <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>Shape (N,). List of beams in terms of their IDs which
+will be included in the timestream. Length
+N (integers can be in [0,1023]).</dd>
+<dt>frequencies <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>Shape (F,). List of which frequencies to calculate sensitivity
+for. Frequencies are floats given in terms of MHz.</dd>
+<dt>detection_threshold <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The sensitivity (0-1) that is considered for a “detection”,
+meaning the time spent with sensitivity &gt; _ for any beam
+is considered “detecting time,” and is integrated over.</dd>
+<dt>ra_lower <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The right ascension lower-limit of the map
+In degrees.</dd>
+<dt>ra_upper <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The right ascension upper-limit of the map
+In degrees.</dd>
+<dt>dec_lower <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The declination lower-limit of the map
+In degrees.</dd>
+<dt>dec_upper <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The declination upper-limit of the map
+In degrees.</dd>
+<dt>beam_ids <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>Shape (N,). List of beams in terms of their IDs which
+will be included in the timestream. Length
+N (integers can be in [0,1023]).</dd>
+<dt>frequencies <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>Shape (F,). List of which frequencies to calculate sensitivity
+for. Frequencies are floats given in terms of MHz.</dd>
+</dl>
+<dl class="docutils">
+<dt>numpy.ndarray</dt>
+<dd>A float numpy.ndarray: (R, D, F), where R is the number of
+right ascension samples on the map, D is the number of
+declination samples on the map, and F is the number of
+frequencies. The floats in the array represent
+the minutes over all beams to the point
+in the sky. The first sample
+is at the start date, and the last sample is
+at or before the end_date. Samples are spaced
+according to the resolution provided.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="exposure.query_location_az_alt">
+<code class="descclassname">exposure.</code><code class="descname">query_location_az_alt</code><span class="sig-paren">(</span><em>date</em>, <em>ra</em>, <em>dec</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#query_location_az_alt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.query_location_az_alt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate az, alt given a date, ra, and dec</p>
+<dl class="docutils">
+<dt>date <span class="classifier-delimiter">:</span> <span class="classifier">string</span></dt>
+<dd>A string containing the date and time in
+“2018/01/25 15:00:30” order, where the
+time is given in UTC.</dd>
+<dt>ra <span class="classifier-delimiter">:</span> <span class="classifier">ephem.Degrees</span></dt>
+<dd>The right ascension of an object on the sky.
+For example, ephem.Degrees(‘00:00:00.000’)</dd>
+<dt>dec <span class="classifier-delimiter">:</span> <span class="classifier">ephem.Degrees</span></dt>
+<dd>The right ascension of an object on the sky.</dd>
+</dl>
+<dl class="docutils">
+<dt>tuple</dt>
+<dd>A float 2-tuple: (az, alt), in degrees,
+representing the azimuth and altitude
+of an object on the sky</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">chime-sensitivity</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Miles Cranmer, CHIME/FRB Collaboration.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/exposure.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
