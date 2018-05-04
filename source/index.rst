@@ -6,10 +6,29 @@
 Welcome to chime-sensitivity's documentation!
 =============================================
 
+Function documentation:
+
 .. toctree::
    :maxdepth: 3
    :numbered:
-   :caption: Table of Contents
+   :caption: Primary modules
+
+   snr_estimator
+   common_pulsars
+   exposure
+
+
+.. toctree::
+   :maxdepth: 3
+   :numbered:
+   :caption: Supporting modules
+
+   beam_model
+   generate_atnf_readable_cat
+   get_temp_at_point
+   known_source_viewing
+   load_beam_centers
+   reduce_atnf_cat
 
 
 Indices and tables
