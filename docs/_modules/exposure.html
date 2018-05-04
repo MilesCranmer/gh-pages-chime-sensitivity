@@ -220,26 +220,7 @@
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sensitivity</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="call_for_exp_map2"><a class="viewcode-back" href="../exposure.html#exposure.call_for_exp_map2">[docs]</a><span class="k">class</span> <span class="nc">call_for_exp_map2</span><span class="p">():</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">resolution</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">start_date</span> <span class="o">=</span> <span class="n">start_date</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">end_date</span> <span class="o">=</span> <span class="n">end_date</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span> <span class="o">=</span> <span class="n">resolution</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">beam_ids</span> <span class="o">=</span> <span class="n">beam_ids</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span> <span class="o">=</span> <span class="n">frequencies</span>
-<div class="viewcode-block" id="call_for_exp_map2.f2"><a class="viewcode-back" href="../exposure.html#exposure.call_for_exp_map2.f2">[docs]</a>    <span class="k">def</span> <span class="nf">f2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputted</span><span class="p">):</span>
-        <span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
-            <span class="n">inputted</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-            <span class="n">inputted</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">start_date</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">end_date</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">beam_ids</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span><span class="p">)</span>
-        <span class="n">good_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lightcurve</span> <span class="o">&gt;</span> <span class="n">detection_threshold</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">good_samples</span></div></div>
-
-<div class="viewcode-block" id="f4"><a class="viewcode-back" href="../exposure.html#exposure.f4">[docs]</a><span class="k">def</span> <span class="nf">f4</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">resolution</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">,</span> <span class="n">detection_threshold</span><span class="p">,</span> <span class="n">inputted</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+<div class="viewcode-block" id="single_threshold_exposure_lightcurve_handler"><a class="viewcode-back" href="../exposure.html#exposure.single_threshold_exposure_lightcurve_handler">[docs]</a><span class="k">def</span> <span class="nf">single_threshold_exposure_lightcurve_handler</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">resolution</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">,</span> <span class="n">detection_threshold</span><span class="p">,</span> <span class="n">inputted</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
     <span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
         <span class="n">inputted</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
         <span class="n">inputted</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
@@ -248,11 +229,11 @@
         <span class="n">resolution</span><span class="p">,</span>
         <span class="n">beam_ids</span><span class="p">,</span>
         <span class="n">frequencies</span><span class="p">)</span>
-    <span class="c1">#TODO: Should this be a sum over 0th axis?</span>
+    <span class="c1">#TODO: Should this be a sum over 0th axis? (for multi-frequency)</span>
     <span class="n">good_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lightcurve</span> <span class="o">&gt;</span> <span class="n">detection_threshold</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">good_samples</span><span class="p">,</span> <span class="n">index</span></div>
 
-<div class="viewcode-block" id="f5"><a class="viewcode-back" href="../exposure.html#exposure.f5">[docs]</a><span class="k">def</span> <span class="nf">f5</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">resolution</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">,</span> <span class="n">detection_thresholds</span><span class="p">,</span> <span class="n">inputted</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+<div class="viewcode-block" id="multi_threshold_exposure_lightcurve_handler"><a class="viewcode-back" href="../exposure.html#exposure.multi_threshold_exposure_lightcurve_handler">[docs]</a><span class="k">def</span> <span class="nf">multi_threshold_exposure_lightcurve_handler</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">resolution</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">,</span> <span class="n">detection_thresholds</span><span class="p">,</span> <span class="n">inputted</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
     <span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
         <span class="n">inputted</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
         <span class="n">inputted</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
@@ -382,28 +363,13 @@
     <span class="n">len_ra</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ra_lower</span><span class="p">,</span> <span class="n">ra_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">))</span>
     <span class="n">len_dec</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dec_lower</span><span class="p">,</span> <span class="n">dec_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">))</span>
     <span class="n">new_exp_maps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">poses</span><span class="p">))</span>
-    <span class="c1">#def update_exp_map(result):</span>
-        <span class="c1">#new_exp_maps[result[1]] = result[0]</span>
 
-    <span class="c1">#myclass = call_for_exp_map(start_date, end_date, time_resolution, beam_ids, frequencies)</span>
-    <span class="k">def</span> <span class="nf">f3</span><span class="p">(</span><span class="n">inputted</span><span class="p">):</span>
-        <span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
-            <span class="n">inputted</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-            <span class="n">inputted</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-            <span class="n">start_date</span><span class="p">,</span>
-            <span class="n">end_date</span><span class="p">,</span>
-            <span class="n">resolution</span><span class="p">,</span>
-            <span class="n">beam_ids</span><span class="p">,</span>
-            <span class="n">frequencies</span><span class="p">)</span>
-        <span class="n">good_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lightcurve</span> <span class="o">&gt;</span> <span class="n">detection_threshold</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">good_samples</span>
     <span class="k">def</span> <span class="nf">call_back</span><span class="p">(</span><span class="n">result</span><span class="p">):</span>
         <span class="n">new_exp_maps</span><span class="p">[</span><span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
     <span class="n">p</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">poses</span><span class="p">)):</span>
-        <span class="c1">#def f4(start_date, end_date, resolution, beam_ids, frequencies, detection_threshold, inputted, index):</span>
-        <span class="n">p</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">f4</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">time_resolution</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">,</span> <span class="n">detection_threshold</span><span class="p">,</span> <span class="n">poses</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">i</span><span class="p">),</span> <span class="n">callback</span><span class="o">=</span><span class="n">call_back</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">single_threshold_exposure_lightcurve_handler</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">time_resolution</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">,</span> <span class="n">detection_threshold</span><span class="p">,</span> <span class="n">poses</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">i</span><span class="p">),</span> <span class="n">callback</span><span class="o">=</span><span class="n">call_back</span><span class="p">)</span>
     <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
 
@@ -428,7 +394,9 @@
         <span class="n">dec_lower</span><span class="p">,</span>
         <span class="n">dec_upper</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Generate a timestream of exposure to a specific point</span>
+<span class="sd">    Identical to generate_exposure_map except for multiple</span>
+<span class="sd">    detection thresholds (and another output dimension).</span>
+<span class="sd">    this generates a timestream of exposure to a specific point</span>
 
 <span class="sd">    This uses the max sensitivity over the beams, rather than</span>
 <span class="sd">    a sum of sensitivities.</span>
@@ -454,8 +422,9 @@
 <span class="sd">        Shape (F,). List of which frequencies to calculate sensitivity</span>
 <span class="sd">        for. Frequencies are floats given in terms of MHz.</span>
 
-<span class="sd">    detection_threshold : float</span>
-<span class="sd">        The sensitivity (0-1) that is considered for a &quot;detection&quot;,</span>
+<span class="sd">    detection_thresholds : array_like</span>
+<span class="sd">        The sensitivities (0-1) that is considered for a &quot;detection&quot;,</span>
+<span class="sd">        of shape (L,),</span>
 <span class="sd">        meaning the time spent with sensitivity &gt; _ for any beam</span>
 <span class="sd">        is considered &quot;detecting time,&quot; and is integrated over.</span>
 
@@ -488,15 +457,16 @@
 <span class="sd">    -------</span>
 
 <span class="sd">    numpy.ndarray</span>
-<span class="sd">        A float numpy.ndarray: (R, D, F), where R is the number of</span>
+<span class="sd">        A float numpy.ndarray: (R, D, F, L), where R is the number of</span>
 <span class="sd">        right ascension samples on the map, D is the number of</span>
 <span class="sd">        declination samples on the map, and F is the number of</span>
-<span class="sd">        frequencies. The floats in the array represent</span>
+<span class="sd">        frequencies, and L is the number of detection thresholds.</span>
+<span class="sd">        The floats in the array represent</span>
 <span class="sd">        the minutes over all beams to the point</span>
 <span class="sd">        in the sky. The first sample</span>
 <span class="sd">        is at the start date, and the last sample is</span>
 <span class="sd">        at or before the end_date. Samples are spaced</span>
-<span class="sd">        according to the resolution provided.</span>
+<span class="sd">        according to the resolution provided and then summed.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -534,28 +504,13 @@
     <span class="n">len_ra</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ra_lower</span><span class="p">,</span> <span class="n">ra_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">))</span>
     <span class="n">len_dec</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dec_lower</span><span class="p">,</span> <span class="n">dec_upper</span><span class="p">,</span> <span class="n">spatial_resolution</span><span class="p">))</span>
     <span class="n">new_exp_maps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">poses</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">detection_thresholds</span><span class="p">)))</span>
-    <span class="c1">#def update_exp_map(result):</span>
-        <span class="c1">#new_exp_maps[result[1]] = result[0]</span>
 
-    <span class="c1">#myclass = call_for_exp_map(start_date, end_date, time_resolution, beam_ids, frequencies)</span>
-    <span class="k">def</span> <span class="nf">f3</span><span class="p">(</span><span class="n">inputted</span><span class="p">):</span>
-        <span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
-            <span class="n">inputted</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-            <span class="n">inputted</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-            <span class="n">start_date</span><span class="p">,</span>
-            <span class="n">end_date</span><span class="p">,</span>
-            <span class="n">resolution</span><span class="p">,</span>
-            <span class="n">beam_ids</span><span class="p">,</span>
-            <span class="n">frequencies</span><span class="p">)</span>
-        <span class="n">good_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lightcurve</span> <span class="o">&gt;</span> <span class="n">detection_threshold</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">good_samples</span>
     <span class="k">def</span> <span class="nf">call_back</span><span class="p">(</span><span class="n">result</span><span class="p">):</span>
         <span class="n">new_exp_maps</span><span class="p">[</span><span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
     <span class="n">p</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">poses</span><span class="p">)):</span>
-        <span class="c1">#def f4(start_date, end_date, resolution, beam_ids, frequencies, detection_threshold, inputted, index):</span>
-        <span class="n">p</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">f5</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">time_resolution</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">,</span> <span class="n">detection_thresholds</span><span class="p">,</span> <span class="n">poses</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">i</span><span class="p">),</span> <span class="n">callback</span><span class="o">=</span><span class="n">call_back</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">multi_threshold_exposure_lightcurve_handler</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">time_resolution</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">,</span> <span class="n">detection_thresholds</span><span class="p">,</span> <span class="n">poses</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">i</span><span class="p">),</span> <span class="n">callback</span><span class="o">=</span><span class="n">call_back</span><span class="p">)</span>
     <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
 

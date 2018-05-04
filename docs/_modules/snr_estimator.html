@@ -56,6 +56,41 @@
 
 <div class="viewcode-block" id="estimate_n_events"><a class="viewcode-back" href="../snr_estimator.html#snr_estimator.estimate_n_events">[docs]</a><span class="k">def</span> <span class="nf">estimate_n_events</span><span class="p">(</span>
         <span class="n">snr_lightcurve</span><span class="p">,</span> <span class="n">resolution_minutes</span><span class="p">,</span> <span class="n">period</span><span class="p">,</span> <span class="n">snr_threshold</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the number of expected events seen by CHIME</span>
+<span class="sd">    from a pulsar given its expected SNR over time.</span>
+
+<span class="sd">    This uses a simple formula in that every sample in snr_lightcurve</span>
+<span class="sd">    that is above the snr_threshold has all of the pulses</span>
+<span class="sd">    of the pulsar detected by CHIME.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    snr_lightcurve : array_like</span>
+<span class="sd">        The expected SNR of a pulsar&#39;s pulses</span>
+<span class="sd">        over time in an array of shape (T,)</span>
+<span class="sd">        where T is the number of time samples.</span>
+
+<span class="sd">    resolution_minutes : float</span>
+<span class="sd">        The number of minutes between each datapoint</span>
+<span class="sd">        in snr_lightcurve. </span>
+
+<span class="sd">    period : astropy.units.Quantity (float)</span>
+<span class="sd">        The period of the pulsar in units of time.</span>
+
+<span class="sd">    snr_threshold : float</span>
+<span class="sd">        The minimum SNR in the lightcurve required</span>
+<span class="sd">        for the pulsar to be visible.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    int</span>
+<span class="sd">        The number of events expected to be observed for</span>
+<span class="sd">        the pulsar over the snr_lightcurve.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># Number of events above 10 SNR</span>
     <span class="n">bursts_per_data_point</span> <span class="o">=</span> <span class="p">((</span><span class="n">resolution_minutes</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">min</span><span class="p">)</span><span class="o">/</span><span class="n">period</span><span class="p">)</span><span class="o">.</span><span class="n">si</span>
@@ -63,6 +98,25 @@
     <span class="k">return</span> <span class="n">n_events</span></div>
 
 <div class="viewcode-block" id="get_system_temperature"><a class="viewcode-back" href="../snr_estimator.html#snr_estimator.get_system_temperature">[docs]</a><span class="k">def</span> <span class="nf">get_system_temperature</span><span class="p">(</span><span class="n">frequencies</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate the effective system temperature at every frequency</span>
+<span class="sd">    passed.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    frequency : astropy.units.Quantity (array_like)</span>
+<span class="sd">        Frequencies to calculate the system temperature at,</span>
+<span class="sd">        of shape (F,).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    astropy.units.Quantity (array_like)</span>
+<span class="sd">        The system temperature at each frequency, of</span>
+<span class="sd">        shape (F,).</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">Tfeedloss</span> <span class="o">=</span> <span class="mf">7.</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">K</span>
     <span class="n">Tant</span> <span class="o">=</span> <span class="mf">20.</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">K</span> <span class="o">+</span> <span class="mf">7.</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">K</span><span class="o">*</span><span class="p">(</span><span class="n">frequencies</span><span class="o">-</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="o">*</span><span class="mi">400</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="o">*</span><span class="mi">400</span><span class="p">)</span><span class="c1">#Estimated from fig 9 in email with Seth</span>
     <span class="n">Tspillover</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">K</span> <span class="o">+</span> <span class="mf">3.</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">K</span><span class="o">*</span><span class="p">(</span><span class="n">frequencies</span><span class="o">-</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="o">*</span><span class="mi">400</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="o">*</span><span class="mi">400</span><span class="p">)</span> <span class="c1">#Estimated from fig 3 of Bandura</span>
@@ -71,16 +125,103 @@
 
 
 <div class="viewcode-block" id="linear_interpolate"><a class="viewcode-back" href="../snr_estimator.html#snr_estimator.linear_interpolate">[docs]</a><span class="k">def</span> <span class="nf">linear_interpolate</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate a function using linear interpolation</span>
+<span class="sd">    using two reference points: (x0, y0), and (x1, y1).</span>
+<span class="sd">    </span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    </span>
+<span class="sd">    x : array_like</span>
+<span class="sd">        Values of the function to estimate</span>
+<span class="sd">        from the linear interpolation. Of shape</span>
+<span class="sd">        (X,).</span>
+
+<span class="sd">    x0 : float</span>
+<span class="sd">        Starting reference point.</span>
+
+<span class="sd">    x1 : float</span>
+<span class="sd">        End reference point.</span>
+
+<span class="sd">    y0 : float</span>
+<span class="sd">        Value of the function being</span>
+<span class="sd">        estimated at the starting reference point.</span>
+
+<span class="sd">    y1 : float</span>
+<span class="sd">        Value of the function being</span>
+<span class="sd">        estimated at the end reference point.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    array_like</span>
+<span class="sd">        Estimated values of the function of</span>
+<span class="sd">        shape (X,) at each value of x.</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">y0</span> <span class="o">+</span> <span class="p">(</span><span class="n">y1</span><span class="o">-</span><span class="n">y0</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">x0</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">x1</span><span class="o">-</span><span class="n">x0</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="expected_snr_curve_pulsar"><a class="viewcode-back" href="../snr_estimator.html#snr_estimator.expected_snr_curve_pulsar">[docs]</a><span class="k">def</span> <span class="nf">expected_snr_curve_pulsar</span><span class="p">(</span>
         <span class="n">pulsar</span><span class="p">,</span>
         <span class="n">number_frequency_samples</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-        <span class="n">beams</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1024</span><span class="p">)),</span>
+        <span class="n">beams</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">beam_centers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">start_date</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="mi">2018</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">hour</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
         <span class="n">end_date</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="mi">2018</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">hour</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
         <span class="n">resolution_minutes</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the expected SNR seen by CHIME of some pulsar</span>
+<span class="sd">    given parameters over some time range.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    pulsar : dict</span>
+<span class="sd">        A dictionary containing values</span>
+<span class="sd">        for a specific pulsar from the ATNF</span>
+<span class="sd">            catalog, like &#39;w50&#39;, &#39;s400&#39;, &#39;s1400&#39;,</span>
+<span class="sd">            &#39;p0&#39;, &#39;ra&#39;, &#39;dec&#39;, and &#39;dm&#39;.</span>
+
+<span class="sd">    number_frequency_samples : int</span>
+<span class="sd">        The number of frequency samples between</span>
+<span class="sd">        400 and 800 MHz to sample from. Higher</span>
+<span class="sd">        means more accurate but more computation.</span>
+<span class="sd">        </span>
+<span class="sd">    beams : array_like </span>
+<span class="sd">        Integer list indicating which beams are used. The</span>
+<span class="sd">        maximum SNR is chosen at each time sample over all beams.</span>
+
+<span class="sd">    beam_centers : array_like</span>
+<span class="sd">        Of shape (256,) indicating the centers of each beam. The</span>
+<span class="sd">        default is to use the ones defined in</span>
+<span class="sd">        load_beam_centers.get_beam_centers. </span>
+
+<span class="sd">    start_date : datetime.datetime</span>
+<span class="sd">        The starting time of the SNR lightcurve. Default</span>
+<span class="sd">        is February 10th, 2018 00:00 UTC.</span>
+
+<span class="sd">    end_date : datetime.datetime</span>
+<span class="sd">        The end time of the SNR lightcurve. Default</span>
+<span class="sd">        is February 11th, 2018 00:00 UTC.</span>
+
+<span class="sd">    resolution_minutes : float</span>
+<span class="sd">        The number of minutes for each time sample.</span>
+<span class="sd">        The default is 2 minutes.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    array_like</span>
+<span class="sd">        Array of shape (T, F), where T is the number of time</span>
+<span class="sd">        samples, and F is the number of frequencies past. Each</span>
+<span class="sd">        datapoint represents the expectation SNR of pulses at</span>
+<span class="sd">        that point in time.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">beams</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">beams</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1024</span><span class="p">))</span>
 
     <span class="n">resolution</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">resolution_minutes</span><span class="p">)</span>
 
@@ -129,11 +270,74 @@
             <span class="n">dm</span><span class="p">,</span>
             <span class="n">ra</span><span class="p">,</span>
             <span class="n">dec</span><span class="p">,</span>
-            <span class="n">beams</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1024</span><span class="p">)),</span>
+            <span class="n">beams</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">beam_centers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">start_date</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="mi">2018</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">hour</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
             <span class="n">end_date</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="mi">2018</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">hour</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
             <span class="n">resolution_minutes</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the expected SNR seen by CHIME of some event of</span>
+<span class="sd">    given parameters over some time range.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    frequencies : array_like</span>
+<span class="sd">        List of frequencies (floats in terms of MHz) for</span>
+<span class="sd">        which to use as part of the SNR calculation. An example</span>
+<span class="sd">        would be [400, 600, 800] which is coarse sampling of</span>
+<span class="sd">        CHIME&#39;s bandwidth. Of shape (F,)</span>
+
+<span class="sd">    fluxes : array_like</span>
+<span class="sd">        Fluxes (floats in terms of mJy) of the event</span>
+<span class="sd">        at each frequency given. This is of shape (F,).</span>
+
+<span class="sd">    width : float</span>
+<span class="sd">        The width of the burst in ms. NOT an astropy.units.Quantity.</span>
+
+<span class="sd">    dm : float</span>
+<span class="sd">        The DM of the burst in pc/cm^3.</span>
+
+<span class="sd">    ra : float</span>
+<span class="sd">        The right ascension of the event in the sky in decimal hours.</span>
+
+<span class="sd">    dec : float</span>
+<span class="sd">        The declination of the event in the sky in decimal degrees.</span>
+
+<span class="sd">    beams : array_like </span>
+<span class="sd">        Integer list indicating which beams are used. The</span>
+<span class="sd">        maximum SNR is chosen at each time sample over all beams.</span>
+
+<span class="sd">    beam_centers : array_like</span>
+<span class="sd">        Of shape (256,) indicating the centers of each beam. The</span>
+<span class="sd">        default is to use the ones defined in</span>
+<span class="sd">        load_beam_centers.get_beam_centers. </span>
+
+<span class="sd">    start_date : datetime.datetime</span>
+<span class="sd">        The starting time of the SNR lightcurve. Default</span>
+<span class="sd">        is February 10th, 2018 00:00 UTC.</span>
+
+<span class="sd">    end_date : datetime.datetime</span>
+<span class="sd">        The end time of the SNR lightcurve. Default</span>
+<span class="sd">        is February 11th, 2018 00:00 UTC.</span>
+
+<span class="sd">    resolution_minutes : float</span>
+<span class="sd">        The number of minutes for each time sample.</span>
+<span class="sd">        The default is 2 minutes.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    array_like</span>
+<span class="sd">        Array of shape (T, F), where T is the number of time</span>
+<span class="sd">        samples, and F is the number of frequencies past. Each</span>
+<span class="sd">        datapoint represents the expectation SNR at</span>
+<span class="sd">        that point in time.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">beams</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">beams</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1024</span><span class="p">))</span>
 
     <span class="n">resolution</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">resolution_minutes</span><span class="p">)</span>
 

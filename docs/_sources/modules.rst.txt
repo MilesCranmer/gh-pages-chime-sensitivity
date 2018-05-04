@@ -6,6 +6,8 @@ Sensitivity
 
    beam_model
    common_pulsars
+   delme.1
+   delme.2
    exposure
    full_test
    generate_atnf_readable_cat

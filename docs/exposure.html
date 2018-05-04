@@ -42,16 +42,6 @@
   <div class="section" id="module-exposure">
 <span id="exposure-module"></span><h1>exposure module<a class="headerlink" href="#module-exposure" title="Permalink to this headline">¶</a></h1>
 <p>Functions for exposure mapping</p>
-<dl class="class">
-<dt id="exposure.call_for_exp_map2">
-<em class="property">class </em><code class="descclassname">exposure.</code><code class="descname">call_for_exp_map2</code><span class="sig-paren">(</span><em>start_date</em>, <em>end_date</em>, <em>resolution</em>, <em>beam_ids</em>, <em>frequencies</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#call_for_exp_map2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.call_for_exp_map2" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
-<dt id="exposure.call_for_exp_map2.f2">
-<code class="descname">f2</code><span class="sig-paren">(</span><em>inputted</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#call_for_exp_map2.f2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.call_for_exp_map2.f2" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
 <dl class="function">
 <dt id="exposure.exposure_lightcurve">
 <code class="descclassname">exposure.</code><code class="descname">exposure_lightcurve</code><span class="sig-paren">(</span><em>ra_degree</em>, <em>dec_degree</em>, <em>start_date</em>, <em>end_date</em>, <em>resolution</em>, <em>beam_ids</em>, <em>frequencies</em>, <em>beam_positions=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#exposure_lightcurve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.exposure_lightcurve" title="Permalink to this definition">¶</a></dt>
@@ -97,16 +87,6 @@ at or before the end_date. Samples are spaced
 according to the resolution provided.</dd>
 </dl>
 </dd></dl>
-
-<dl class="function">
-<dt id="exposure.f4">
-<code class="descclassname">exposure.</code><code class="descname">f4</code><span class="sig-paren">(</span><em>start_date</em>, <em>end_date</em>, <em>resolution</em>, <em>beam_ids</em>, <em>frequencies</em>, <em>detection_threshold</em>, <em>inputted</em>, <em>index</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#f4"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.f4" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="exposure.f5">
-<code class="descclassname">exposure.</code><code class="descname">f5</code><span class="sig-paren">(</span><em>start_date</em>, <em>end_date</em>, <em>resolution</em>, <em>beam_ids</em>, <em>frequencies</em>, <em>detection_thresholds</em>, <em>inputted</em>, <em>index</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#f5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.f5" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
 
 <dl class="function">
 <dt id="exposure.generate_chime_ephem">
@@ -180,7 +160,9 @@ according to the resolution provided.</dd>
 <dl class="function">
 <dt id="exposure.generate_exposure_map_alt">
 <code class="descclassname">exposure.</code><code class="descname">generate_exposure_map_alt</code><span class="sig-paren">(</span><em>start_date</em>, <em>end_date</em>, <em>spatial_resolution</em>, <em>time_resolution</em>, <em>beam_ids</em>, <em>frequencies</em>, <em>detection_thresholds</em>, <em>ra_lower</em>, <em>ra_upper</em>, <em>dec_lower</em>, <em>dec_upper</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#generate_exposure_map_alt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.generate_exposure_map_alt" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generate a timestream of exposure to a specific point</p>
+<dd><p>Identical to generate_exposure_map except for multiple
+detection thresholds (and another output dimension).
+this generates a timestream of exposure to a specific point</p>
 <p>This uses the max sensitivity over the beams, rather than
 a sum of sensitivities.</p>
 <dl class="docutils">
@@ -197,8 +179,9 @@ N (integers can be in [0,1023]).</dd>
 <dt>frequencies <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
 <dd>Shape (F,). List of which frequencies to calculate sensitivity
 for. Frequencies are floats given in terms of MHz.</dd>
-<dt>detection_threshold <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
-<dd>The sensitivity (0-1) that is considered for a “detection”,
+<dt>detection_thresholds <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>The sensitivities (0-1) that is considered for a “detection”,
+of shape (L,),
 meaning the time spent with sensitivity &gt; _ for any beam
 is considered “detecting time,” and is integrated over.</dd>
 <dt>ra_lower <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
@@ -223,17 +206,23 @@ for. Frequencies are floats given in terms of MHz.</dd>
 </dl>
 <dl class="docutils">
 <dt>numpy.ndarray</dt>
-<dd>A float numpy.ndarray: (R, D, F), where R is the number of
+<dd>A float numpy.ndarray: (R, D, F, L), where R is the number of
 right ascension samples on the map, D is the number of
 declination samples on the map, and F is the number of
-frequencies. The floats in the array represent
+frequencies, and L is the number of detection thresholds.
+The floats in the array represent
 the minutes over all beams to the point
 in the sky. The first sample
 is at the start date, and the last sample is
 at or before the end_date. Samples are spaced
-according to the resolution provided.</dd>
+according to the resolution provided and then summed.</dd>
 </dl>
 </dd></dl>
+
+<dl class="function">
+<dt id="exposure.multi_threshold_exposure_lightcurve_handler">
+<code class="descclassname">exposure.</code><code class="descname">multi_threshold_exposure_lightcurve_handler</code><span class="sig-paren">(</span><em>start_date</em>, <em>end_date</em>, <em>resolution</em>, <em>beam_ids</em>, <em>frequencies</em>, <em>detection_thresholds</em>, <em>inputted</em>, <em>index</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#multi_threshold_exposure_lightcurve_handler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.multi_threshold_exposure_lightcurve_handler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="function">
 <dt id="exposure.query_location_az_alt">
@@ -257,6 +246,11 @@ representing the azimuth and altitude
 of an object on the sky</dd>
 </dl>
 </dd></dl>
+
+<dl class="function">
+<dt id="exposure.single_threshold_exposure_lightcurve_handler">
+<code class="descclassname">exposure.</code><code class="descname">single_threshold_exposure_lightcurve_handler</code><span class="sig-paren">(</span><em>start_date</em>, <em>end_date</em>, <em>resolution</em>, <em>beam_ids</em>, <em>frequencies</em>, <em>detection_threshold</em>, <em>inputted</em>, <em>index</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#single_threshold_exposure_lightcurve_handler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.single_threshold_exposure_lightcurve_handler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </div>
 
