@@ -7,9 +7,10 @@ Welcome to chime-sensitivity's documentation!
 =============================================
 
 Function documentation:
+~~~~~~~~~~~~~~~~~~~~~~~
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 1
    :numbered:
    :caption: Primary modules
 
@@ -19,7 +20,7 @@ Function documentation:
 
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 1
    :numbered:
    :caption: Supporting modules
 
