@@ -49,6 +49,11 @@ Quick-start installation requirements:
 - ``h5py``
 - ``pygsm``
 
+If you have difficulty installing these packages,
+you can also use docker to use a pre-built build system
+that works on any operating system. The instructions
+for this are below.
+
 Quick-start example queries:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -164,18 +169,15 @@ in the sensitivity code are dataframes.
 
 From here, you should try the following to learn the code:
 
-- Try to predict n_events, plot against vs predicted. Try a cutoff at 20 SNR and see how that changes it.
+- Try to predict n_events, plot observed vs predicted. Try a cutoff at 20 SNR and see how that changes it.
 - Try to change the beam model and see how it changes the output.
 - Try to change the beam centers (maybe divide by two) and see how it changes output.
 - View the SNR distributions
 - Annotate the plot with pulsar names
-- New: try to alter max SNR predicted using N-events - increase predicted SNR.
-  Use sqrt(np.log(n**2/(2*np.pi*np.log(n**2/2/np.pi))))*(1+gamma/np.log(n))
-  Or... 
+- Try to alter max SNR predicted using the expectation value for the maximum
+  of N samples of a Gaussian.
 - Increase the system temperature and see how it changes the output.
 - Try to generate the plots for chime-sensitivity (from Arun's injection code), using the ipython notebook (use the same docker)
-
-
 
 
 
