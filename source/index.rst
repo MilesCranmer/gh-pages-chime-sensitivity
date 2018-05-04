@@ -7,8 +7,9 @@ Welcome to chime-sensitivity's documentation!
 =============================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 3
+   :numbered:
+   :caption: Table of Contents
 
 
 Indices and tables
