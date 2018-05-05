@@ -5,7 +5,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>2. common_pulsars module &#8212; chime-sensitivity 0.1 documentation</title>
+    <title>1. Introduction &#8212; chime-sensitivity 0.1 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -24,8 +24,8 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="3. exposure module" href="exposure.html" />
-    <link rel="prev" title="1. snr_estimator module" href="snr_estimator.html" />
+    <link rel="next" title="1. snr_estimator module" href="snr_estimator.html" />
+    <link rel="prev" title="Welcome to chime-sensitivity’s documentation!" href="index.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -41,25 +41,31 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="module-common_pulsars">
-<span id="common-pulsars-module"></span><h1>2. common_pulsars module<a class="headerlink" href="#module-common_pulsars" title="Permalink to this headline">¶</a></h1>
-<dl class="function">
-<dt id="common_pulsars.get_pulsar">
-<code class="descclassname">common_pulsars.</code><code class="descname">get_pulsar</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/common_pulsars.html#get_pulsar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#common_pulsars.get_pulsar" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a dict for a pulsar by name (string),
-using the data in clean_atnf_cat.pkl, which
-is generated from the ATNF catalog.</p>
-<dl class="docutils">
-<dt>name <span class="classifier-delimiter">:</span> <span class="classifier">string</span></dt>
-<dd>The name of the pulsar (case-sensitive), such
-as “B0329+54”</dd>
-</dl>
-<dl class="docutils">
-<dt>dict</dt>
-<dd>The pulsar parameters as listed in clean_atnf_cat.pkl.</dd>
-</dl>
-</dd></dl>
-
+  <div class="section" id="introduction">
+<h1>1. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<p>This project is described in my undergrad thesis
+which is found at
+<a class="reference external" href="https://github.com/CHIMEFRB/Sensitivity/blob/master/thesis.pdf">github.com/CHIMEFRB/Sensitivity/blob/master/thesis.pdf</a>.</p>
+<p>This repo offers various functionality to estimate CHIME/FRB’s
+sensitivity to fast radio transients.</p>
+<div class="section" id="pulsar-snr">
+<h2>1.1. Pulsar SNR<a class="headerlink" href="#pulsar-snr" title="Permalink to this headline">¶</a></h2>
+<p>For the first example, let us estimate the maximum SNR
+of a pulsar, and change the settings to add a bandpass attenuation.
+Create a new file in the same folder as the sensitivity code.
+Now, let’s download a pulsar as a Python dictionary:</p>
+<p>This stores a dict containing B0329’s parameters. You
+can write <code class="docutils literal"><span class="pre">print</span> <span class="pre">b0329</span></code> to see what is contained. If
+at any point you would like to update the catalog or
+add more values, add it to the pickled pandas DataFrame
+in <code class="docutils literal"><span class="pre">clean_atnf_cat.pkl</span></code>. Now, let’s estimate the
+max SNR for this source.</p>
+<p>This function takes the pulsar parameter as well as settings
+(which have some defaults) to estimate the expected SNR of
+pulses over time.</p>
+<p>We can see what the max SNR of the pulsar is
+over its transit with the following command:</p>
+</div>
 </div>
 
 
@@ -79,13 +85,13 @@ as “B0329+54”</dd>
 
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Introductory</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction</a></li>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">1. Introduction</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Primary modules</span></p>
-<ul class="current">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="snr_estimator.html">1. snr_estimator module</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">2. common_pulsars module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="common_pulsars.html">2. common_pulsars module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="exposure.html">3. exposure module</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Supporting modules</span></p>
@@ -102,8 +108,8 @@ as “B0329+54”</dd>
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="snr_estimator.html" title="previous chapter">1. snr_estimator module</a></li>
-      <li>Next: <a href="exposure.html" title="next chapter">3. exposure module</a></li>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to chime-sensitivity’s documentation!</a></li>
+      <li>Next: <a href="snr_estimator.html" title="next chapter">1. snr_estimator module</a></li>
   </ul></li>
 </ul>
 </div>
@@ -129,7 +135,7 @@ as “B0329+54”</dd>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
       
       |
-      <a href="_sources/common_pulsars.rst.txt"
+      <a href="_sources/introduction.rst.txt"
           rel="nofollow">Page source</a>
     </div>
 

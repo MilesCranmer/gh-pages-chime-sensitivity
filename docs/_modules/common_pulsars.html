@@ -43,7 +43,25 @@
 <span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
 <div class="viewcode-block" id="get_pulsar"><a class="viewcode-back" href="../common_pulsars.html#common_pulsars.get_pulsar">[docs]</a><span class="k">def</span> <span class="nf">get_pulsar</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; Return a dict for a pulsar by name (string) &quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a dict for a pulsar by name (string),</span>
+<span class="sd">    using the data in clean_atnf_cat.pkl, which</span>
+<span class="sd">    is generated from the ATNF catalog.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    name : string</span>
+<span class="sd">        The name of the pulsar (case-sensitive), such</span>
+<span class="sd">        as &quot;B0329+54&quot;</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    dict</span>
+<span class="sd">        The pulsar parameters as listed in clean_atnf_cat.pkl.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">atnf_cat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="s1">&#39;clean_atnf_cat.pkl&#39;</span><span class="p">)</span>
     <span class="n">pulsar</span> <span class="o">=</span> <span class="n">atnf_cat</span><span class="p">[</span><span class="n">atnf_cat</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">name</span><span class="p">]</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pulsar</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -68,6 +86,10 @@
 
 
 <h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Introductory</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">1. Introduction</a></li>
+</ul>
 <p class="caption"><span class="caption-text">Primary modules</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../snr_estimator.html">1. snr_estimator module</a></li>

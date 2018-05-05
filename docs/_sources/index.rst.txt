@@ -7,6 +7,17 @@ Welcome to chime-sensitivity's documentation!
 =============================================
 
 
+Tutorials
+~~~~~~~~~
+
+.. toctree::
+    :maxdepth: 1
+    :numbered:
+    :caption: Introductory
+
+    introduction
+
+
 Function python reference:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -35,7 +46,8 @@ Function python reference:
 Quick-start installation requirements:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Python packages:**
+This sensitivity code uses Python 2.7. It requires the following
+packages:
 
 - ``datetime``
 - ``multiprocessing``
@@ -102,7 +114,7 @@ To do this:
 Quick-start tutorial with docker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Make sure you have docker installed. This tutorial assumes a familiarity with python, numpy, and matplotlib.
+Make sure you have docker installed.
 
 In your terminal, navigate to the repo with the sensitivity repo installed. Now, install the sensitivity code pre-reqs using Docker, with the following command::
 
