@@ -53,6 +53,85 @@ The example was:</p>
 </div>
 <p>This produces a curve of expected SNR over time (which,
 by the default settings, is one-day at two-minute resolution).</p>
+<p>In the following code, the following code
+has arguments: <code class="docutils literal"><span class="pre">pulsar</span></code>, the dictionary input,
+<code class="docutils literal"><span class="pre">number_frequency_samples</span></code> with default <code class="docutils literal"><span class="pre">5</span></code>,
+<code class="docutils literal"><span class="pre">beams</span></code> with default as all of them,
+<code class="docutils literal"><span class="pre">beam_centers</span></code> with default <code class="docutils literal"><span class="pre">get_beam_centers()</span></code>,
+<code class="docutils literal"><span class="pre">start_date</span></code> with default <code class="docutils literal"><span class="pre">datetime.datetime(year=2018,</span> <span class="pre">month=2,</span> <span class="pre">day=10,</span> <span class="pre">hour=0)</span></code>,
+<code class="docutils literal"><span class="pre">end_date</span></code> with default <code class="docutils literal"><span class="pre">datetime.datetime(year=2018,</span> <span class="pre">month=2,</span> <span class="pre">day=11,</span> <span class="pre">hour=0)</span></code>,
+and <code class="docutils literal"><span class="pre">resolution_minutes</span></code> with default as <code class="docutils literal"><span class="pre">2</span></code>.</p>
+<p>We first generate an array of frequencies from 400
+to 800 MHz with the <code class="docutils literal"><span class="pre">number_frequency_samples</span></code> samples.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">start_frequency</span> <span class="o">=</span> <span class="mi">400</span>
+<span class="n">end_frequency</span> <span class="o">=</span> <span class="mi">800</span>
+<span class="n">frequencies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
+        <span class="n">start_frequency</span><span class="p">,</span>
+        <span class="n">end_frequency</span><span class="p">,</span>
+        <span class="n">number_frequency_samples</span><span class="p">)</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span>
+</pre></div>
+</div>
+<p>Note that this array is multiplied by <code class="docutils literal"><span class="pre">u.MHz</span></code>.
+This <code class="docutils literal"><span class="pre">u</span></code> is short for <code class="docutils literal"><span class="pre">astropy.units</span></code>,
+which allows us to add a units attribute to any
+numpy array. This is a dummy-proof way of multiplying
+values with intrinsic unit dimensionality without
+missing orders of magnitude - that part of the multiplication
+is handled by the units package. Functions/attributes
+of this package used include: <code class="docutils literal"><span class="pre">.si</span></code>,
+which converts the array into simplified SI units,
+and <code class="docutils literal"><span class="pre">.value</span></code>, which returns a vanilla numpy array
+in the current units. One can also use, e.g.,
+<code class="docutils literal"><span class="pre">.to('cm')</span></code> to convert to specific units.</p>
+<p>Next, let us calculate the system temperature
+using various system temperature frequency-dependencies.
+This calculates it at each frequency and gives
+it in the same-shape array with units of Kelvin:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">Tsys</span> <span class="o">=</span> <span class="n">get_system_temperature</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">dec_injection</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;dec&#39;</span><span class="p">]</span>
+<span class="n">ra_injection</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">24.</span><span class="o">*</span><span class="mf">360.</span>
+<span class="n">period</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;p0&#39;</span><span class="p">]</span> <span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">s</span>
+<span class="n">width</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;w50&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">ms</span>
+<span class="n">fifty_percentile_width</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;w50&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">ms</span>
+<span class="n">duty_cycle</span> <span class="o">=</span> <span class="p">(</span><span class="n">fifty_percentile_width</span><span class="o">/</span><span class="n">period</span><span class="p">)</span><span class="o">.</span><span class="n">si</span>
+
+<span class="c1">#1.*u.mJy/duty_cycle</span>
+<span class="n">fluxes</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">mJy</span><span class="o">*</span><span class="n">linear_interpolate</span><span class="p">(</span>
+    <span class="n">x</span><span class="o">=</span><span class="n">frequencies</span><span class="p">,</span>
+    <span class="n">x0</span><span class="o">=</span><span class="mi">400</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="p">,</span>
+    <span class="n">x1</span><span class="o">=</span><span class="mi">1400</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="p">,</span>
+    <span class="n">y0</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;s400&#39;</span><span class="p">]),</span>
+    <span class="n">y1</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;s1400&#39;</span><span class="p">]))</span><span class="o">/</span><span class="n">duty_cycle</span>
+
+<span class="c1">#TODO: Use great circle angle in the projection</span>
+<span class="n">projection</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">((</span><span class="mf">49.5</span><span class="o">-</span><span class="n">dec_injection</span><span class="p">)</span><span class="o">/</span><span class="mf">180.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+<span class="n">snr_multiplier</span> <span class="o">=</span> <span class="p">(</span><span class="n">CHIME_GAIN</span><span class="o">*</span><span class="n">fluxes</span><span class="o">*</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">width</span><span class="o">*</span><span class="n">CHIME_BANDWIDTH</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">0.5</span><span class="p">))</span><span class="o">.</span><span class="n">si</span><span class="o">*</span><span class="n">projection</span>
+<span class="n">width</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;w50&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">ms</span> <span class="c1">#The 50% level</span>
+
+<span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
+    <span class="n">ra_injection</span><span class="p">,</span>
+    <span class="n">dec_injection</span><span class="p">,</span>
+    <span class="n">start_date</span><span class="p">,</span>
+    <span class="n">end_date</span><span class="p">,</span>
+    <span class="n">resolution</span><span class="p">,</span>
+    <span class="n">beams</span><span class="p">,</span>
+    <span class="n">frequencies</span><span class="p">,</span>
+    <span class="n">beam_centers</span><span class="p">)</span>
+
+<span class="n">deg_to_rad</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">deg</span><span class="p">:</span> <span class="n">deg</span><span class="o">/</span><span class="mf">180.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+<span class="n">Tsky</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">K</span><span class="o">*</span><span class="n">get_temp</span><span class="p">(</span><span class="n">deg_to_rad</span><span class="p">(</span><span class="n">ra_injection</span><span class="p">),</span> <span class="n">deg_to_rad</span><span class="p">(</span><span class="n">dec_injection</span><span class="p">),</span> <span class="p">(</span><span class="n">frequencies</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="p">))</span><span class="o">.</span><span class="n">si</span><span class="p">)</span>
+<span class="n">snr_lightcurve</span> <span class="o">=</span> <span class="p">(</span><span class="n">lightcurve</span><span class="o">*</span><span class="n">snr_multiplier</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:]</span><span class="o">/</span><span class="p">(</span><span class="n">Tsky</span><span class="o">+</span><span class="n">Tsys</span><span class="p">))</span><span class="o">.</span><span class="n">si</span>
+
+
+<span class="c1"># Calculate SNR expected over time</span>
+<span class="n">total_lightcurve</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">snr_lightcurve</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="c1"># Return lightcurve SNR</span>
+<span class="k">return</span> <span class="n">total_lightcurve</span>
+</pre></div>
+</div>
 </div>
 
 
