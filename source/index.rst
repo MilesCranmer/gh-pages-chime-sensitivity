@@ -13,9 +13,9 @@ Tutorials
 .. toctree::
     :maxdepth: 1
     :numbered:
-    :caption: Introductory
 
     introduction
+    snr_estimation
 
 
 Function python reference:
