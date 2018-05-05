@@ -19,7 +19,7 @@ of a pulsar, and change the settings to add a bandpass attenuation.
 Create a new file in the same folder as the sensitivity code.
 Now, let's download a pulsar as a Python dictionary:
 
-.. highlighting:: python
+.. code-block:: python
     
     from common_pulsars import get_pulsar
     
@@ -33,7 +33,7 @@ add more values, add it to the pickled pandas DataFrame
 in ``clean_atnf_cat.pkl``. Now, let's estimate the
 max SNR for this source.
 
-.. highlighting:: python
+.. code-block:: python
 
     from snr_estimator import expected_snr_curve_pulsar
 
@@ -47,7 +47,7 @@ pulses over time.
 We can see what the max SNR of the pulsar is
 over its transit with the following command:
 
-.. highlighting:: python
+.. code-block:: python
 
     max_snr = np.max(snr_over_time)
     print max_snr

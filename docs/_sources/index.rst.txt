@@ -72,7 +72,7 @@ Quick-start example queries:
 Say you want to calculate the max SNR of B0329
 over a single day period. To do this with default options:
 
-.. highlight:: python
+.. code-block:: python
 
     from common_pulsars import get_pulsar
     from snr_estimator import expected_snr_curve_pulsar
@@ -87,7 +87,7 @@ Or, say you want to be more specific about settings
 and instead calculate the observed number of events.
 To do this:
 
-.. highlight:: python
+.. code-block:: python
 
     from astropy import units as u
     from datetime import datetime

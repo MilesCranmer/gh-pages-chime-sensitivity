@@ -54,17 +54,31 @@ sensitivity to fast radio transients.</p>
 of a pulsar, and change the settings to add a bandpass attenuation.
 Create a new file in the same folder as the sensitivity code.
 Now, let’s download a pulsar as a Python dictionary:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">common_pulsars</span> <span class="kn">import</span> <span class="n">get_pulsar</span>
+
+<span class="n">b0329</span> <span class="o">=</span> <span class="n">get_pulsar</span><span class="p">(</span><span class="s1">&#39;B0329+54&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
 <p>This stores a dict containing B0329’s parameters. You
 can write <code class="docutils literal"><span class="pre">print</span> <span class="pre">b0329</span></code> to see what is contained. If
 at any point you would like to update the catalog or
 add more values, add it to the pickled pandas DataFrame
 in <code class="docutils literal"><span class="pre">clean_atnf_cat.pkl</span></code>. Now, let’s estimate the
 max SNR for this source.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">snr_estimator</span> <span class="kn">import</span> <span class="n">expected_snr_curve_pulsar</span>
+
+<span class="n">snr_over_time</span> <span class="o">=</span> <span class="n">expected_snr_curve_pulsar</span><span class="p">(</span><span class="n">b0329</span><span class="p">)</span> <span class="c1">#expected SNR of B0329</span>
+</pre></div>
+</div>
 <p>This function takes the pulsar parameter as well as settings
 (which have some defaults) to estimate the expected SNR of
 pulses over time.</p>
 <p>We can see what the max SNR of the pulsar is
 over its transit with the following command:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">max_snr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">snr_over_time</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">max_snr</span>
+</pre></div>
+</div>
 </div>
 </div>
 
