@@ -90,27 +90,44 @@ it in the same-shape array with units of Kelvin:</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">Tsys</span> <span class="o">=</span> <span class="n">get_system_temperature</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>We define some variables using the pulsar parameters:</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">dec_injection</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;dec&#39;</span><span class="p">]</span>
 <span class="n">ra_injection</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;ra&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">24.</span><span class="o">*</span><span class="mf">360.</span>
-<span class="n">period</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;p0&#39;</span><span class="p">]</span> <span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">s</span>
+<span class="n">period</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;p0&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">s</span>
 <span class="n">width</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;w50&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">ms</span>
 <span class="n">fifty_percentile_width</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;w50&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">ms</span>
 <span class="n">duty_cycle</span> <span class="o">=</span> <span class="p">(</span><span class="n">fifty_percentile_width</span><span class="o">/</span><span class="n">period</span><span class="p">)</span><span class="o">.</span><span class="n">si</span>
-
-<span class="c1">#1.*u.mJy/duty_cycle</span>
-<span class="n">fluxes</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">mJy</span><span class="o">*</span><span class="n">linear_interpolate</span><span class="p">(</span>
+</pre></div>
+</div>
+<p>Now, we linearly interpolate the fluxes
+based on two reference points from the ATNF dataset.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">fluxes</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">mJy</span><span class="o">*</span><span class="n">linear_interpolate</span><span class="p">(</span>
     <span class="n">x</span><span class="o">=</span><span class="n">frequencies</span><span class="p">,</span>
     <span class="n">x0</span><span class="o">=</span><span class="mi">400</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="p">,</span>
     <span class="n">x1</span><span class="o">=</span><span class="mi">1400</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="p">,</span>
     <span class="n">y0</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;s400&#39;</span><span class="p">]),</span>
     <span class="n">y1</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;s1400&#39;</span><span class="p">]))</span><span class="o">/</span><span class="n">duty_cycle</span>
-
-<span class="c1">#TODO: Use great circle angle in the projection</span>
-<span class="n">projection</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">((</span><span class="mf">49.5</span><span class="o">-</span><span class="n">dec_injection</span><span class="p">)</span><span class="o">/</span><span class="mf">180.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
-<span class="n">snr_multiplier</span> <span class="o">=</span> <span class="p">(</span><span class="n">CHIME_GAIN</span><span class="o">*</span><span class="n">fluxes</span><span class="o">*</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">width</span><span class="o">*</span><span class="n">CHIME_BANDWIDTH</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">0.5</span><span class="p">))</span><span class="o">.</span><span class="n">si</span><span class="o">*</span><span class="n">projection</span>
-<span class="n">width</span> <span class="o">=</span> <span class="n">pulsar</span><span class="p">[</span><span class="s1">&#39;w50&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">ms</span> <span class="c1">#The 50% level</span>
-
-<span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
+</pre></div>
+</div>
+<p>Now, let’s calculate the “SNR multiplier”,
+which gets multiplied by the beam model’s relative sensitivity
+(which represents the attenuation of the beam model relative
+to the center beam from 0 to 1). For the center
+of a beam, and zenith, the snr_multiplier is equal
+to the expected SNR of the source. Note that
+the <code class="docutils literal"><span class="pre">CHIME_*</span></code> values are defined in the file. We
+also add the temperatures later.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">snr_multiplier</span> <span class="o">=</span> <span class="p">(</span><span class="n">CHIME_GAIN</span><span class="o">*</span><span class="n">fluxes</span><span class="o">*</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">width</span><span class="o">*</span><span class="n">CHIME_BANDWIDTH</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">0.5</span><span class="p">))</span><span class="o">.</span><span class="n">si</span>
+</pre></div>
+</div>
+<p>Now, we do an approximate projection effect using the declination:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">projection</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">((</span><span class="mf">49.5</span><span class="o">-</span><span class="n">dec_injection</span><span class="p">)</span><span class="o">/</span><span class="mf">180.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+<span class="n">snr_multiplier</span><span class="o">*=</span><span class="n">projection</span>
+</pre></div>
+</div>
+<p>After this, we calculate the sensitivity of the beam
+model at every time of day.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
     <span class="n">ra_injection</span><span class="p">,</span>
     <span class="n">dec_injection</span><span class="p">,</span>
     <span class="n">start_date</span><span class="p">,</span>
@@ -119,19 +136,32 @@ it in the same-shape array with units of Kelvin:</p>
     <span class="n">beams</span><span class="p">,</span>
     <span class="n">frequencies</span><span class="p">,</span>
     <span class="n">beam_centers</span><span class="p">)</span>
-
-<span class="n">deg_to_rad</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">deg</span><span class="p">:</span> <span class="n">deg</span><span class="o">/</span><span class="mf">180.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
-<span class="n">Tsky</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">K</span><span class="o">*</span><span class="n">get_temp</span><span class="p">(</span><span class="n">deg_to_rad</span><span class="p">(</span><span class="n">ra_injection</span><span class="p">),</span> <span class="n">deg_to_rad</span><span class="p">(</span><span class="n">dec_injection</span><span class="p">),</span> <span class="p">(</span><span class="n">frequencies</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="p">))</span><span class="o">.</span><span class="n">si</span><span class="p">)</span>
-<span class="n">snr_lightcurve</span> <span class="o">=</span> <span class="p">(</span><span class="n">lightcurve</span><span class="o">*</span><span class="n">snr_multiplier</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:]</span><span class="o">/</span><span class="p">(</span><span class="n">Tsky</span><span class="o">+</span><span class="n">Tsys</span><span class="p">))</span><span class="o">.</span><span class="n">si</span>
-
-
-<span class="c1"># Calculate SNR expected over time</span>
-<span class="n">total_lightcurve</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">snr_lightcurve</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
-
-<span class="c1"># Return lightcurve SNR</span>
-<span class="k">return</span> <span class="n">total_lightcurve</span>
 </pre></div>
 </div>
+<p>Note that this has a time dimension
+as well as a frequency dimension.
+This will be multiplied with the <code class="docutils literal"><span class="pre">snr_multiplier</span></code>
+to get the expected value of SNR at every time of day.
+First we calculate the temperature of the sky
+at the location of the source, using the global
+sky model:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">Tsky</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">K</span><span class="o">*</span><span class="n">get_temp</span><span class="p">(</span><span class="n">deg_to_rad</span><span class="p">(</span><span class="n">ra_injection</span><span class="p">),</span> <span class="n">deg_to_rad</span><span class="p">(</span><span class="n">dec_injection</span><span class="p">),</span> <span class="p">(</span><span class="n">frequencies</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">MHz</span><span class="p">))</span><span class="o">.</span><span class="n">si</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now, we can calculate the SNR with the lightcurve:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">deg_to_rad</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">deg</span><span class="p">:</span> <span class="n">deg</span><span class="o">/</span><span class="mf">180.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+<span class="n">snr_lightcurve</span> <span class="o">=</span> <span class="p">(</span><span class="n">lightcurve</span><span class="o">*</span><span class="n">snr_multiplier</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="p">:]</span><span class="o">/</span><span class="p">(</span><span class="n">Tsky</span><span class="o">+</span><span class="n">Tsys</span><span class="p">))</span><span class="o">.</span><span class="n">si</span>
+</pre></div>
+</div>
+<p>Now, we calculate the SNR over the entire bandwidth (by combining
+in quadrature).</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">total_lightcurve</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">snr_lightcurve</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>We thus have an estimation of the pulsar max SNR.
+Further effects from the detection backend
+can be added in later (as a scalar multiplication
+to the SNR).</p>
 </div>
 
 

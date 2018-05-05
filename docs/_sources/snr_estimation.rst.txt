@@ -61,18 +61,22 @@ it in the same-shape array with units of Kelvin:
 
     Tsys = get_system_temperature(frequencies)
 
-
+We define some variables using the pulsar parameters:
 
 .. code-block:: python
 
     dec_injection = pulsar['dec']
     ra_injection = pulsar['ra']/24.*360.
-    period = pulsar['p0'] *u.s
+    period = pulsar['p0']*u.s
     width = pulsar['w50']*u.ms
     fifty_percentile_width = pulsar['w50']*u.ms
     duty_cycle = (fifty_percentile_width/period).si
 
-    #1.*u.mJy/duty_cycle
+Now, we linearly interpolate the fluxes
+based on two reference points from the ATNF dataset.
+
+.. code-block:: python
+
     fluxes = 1.*u.mJy*linear_interpolate(
         x=frequencies,
         x0=400*u.MHz,
@@ -80,10 +84,31 @@ it in the same-shape array with units of Kelvin:
         y0=float(pulsar['s400']),
         y1=float(pulsar['s1400']))/duty_cycle
 
-    #TODO: Use great circle angle in the projection
+
+Now, let's calculate the "SNR multiplier",
+which gets multiplied by the beam model's relative sensitivity
+(which represents the attenuation of the beam model relative
+to the center beam from 0 to 1). For the center
+of a beam, and zenith, the snr_multiplier is equal
+to the expected SNR of the source. Note that
+the ``CHIME_*`` values are defined in the file. We
+also add the temperatures later.
+
+.. code-block:: python
+
+    snr_multiplier = (CHIME_GAIN*fluxes*(2.*width*CHIME_BANDWIDTH)**(0.5)).si
+ 
+Now, we do an approximate projection effect using the declination:
+
+.. code-block:: python
+    
     projection = np.cos((49.5-dec_injection)/180.*np.pi)
-    snr_multiplier = (CHIME_GAIN*fluxes*(2.*width*CHIME_BANDWIDTH)**(0.5)).si*projection
-    width = pulsar['w50']*u.ms #The 50% level
+    snr_multiplier*=projection
+
+After this, we calculate the sensitivity of the beam
+model at every time of day.
+
+.. code-block:: python
 
     lightcurve = exposure_lightcurve(
         ra_injection,
@@ -94,14 +119,34 @@ it in the same-shape array with units of Kelvin:
         beams,
         frequencies,
         beam_centers)
+
+Note that this has a time dimension
+as well as a frequency dimension.
+This will be multiplied with the ``snr_multiplier``
+to get the expected value of SNR at every time of day.
+First we calculate the temperature of the sky
+at the location of the source, using the global
+sky model:
+
+.. code-block:: python
     
-    deg_to_rad = lambda deg: deg/180.*np.pi
     Tsky = u.K*get_temp(deg_to_rad(ra_injection), deg_to_rad(dec_injection), (frequencies/(1*u.MHz)).si)
+
+Now, we can calculate the SNR with the lightcurve:
+
+.. code-block:: python
+
+    deg_to_rad = lambda deg: deg/180.*np.pi
     snr_lightcurve = (lightcurve*snr_multiplier[None, :]/(Tsky+Tsys)).si
 
+Now, we calculate the SNR over the entire bandwidth (by combining
+in quadrature).
 
-    # Calculate SNR expected over time
+.. code-block:: python
+    
     total_lightcurve = np.sqrt(np.average(np.square(snr_lightcurve), axis=1))
 
-    # Return lightcurve SNR
-    return total_lightcurve
+We thus have an estimation of the pulsar max SNR.
+Further effects from the detection backend
+can be added in later (as a scalar multiplication
+to the SNR).
