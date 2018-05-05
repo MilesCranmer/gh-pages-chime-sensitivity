@@ -9,7 +9,7 @@ we will walk through the code behind this and
 see what is going on behind the scenes.
 The example was:
 
-.. highlighting:: python
+.. code-block:: python
 
     snr_over_time = expected_snr_curve_pulsar(b0329) #expected SNR of B0329
 
