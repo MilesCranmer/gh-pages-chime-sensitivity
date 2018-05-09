@@ -105,6 +105,20 @@ Now, we do an approximate projection effect using the declination:
     projection = np.cos((49.5-dec_injection)/180.*np.pi)
     snr_multiplier*=projection
 
+Next, we use data from the L1 injection trials to estimate
+the loss in signal to noise:
+
+.. code-block:: python
+    
+    snr_loss = simulate_l1_loss(width.to('ms').value, dm)
+    snr_multiplier*= snr_loss
+
+Note that as the function `simulate_l1_loss` expects
+floats rather than `astropy` quantities, we had
+to convert the `width` variable to a plain float
+in terms of milliseconds. DM was already in the proper
+format.
+
 After this, we calculate the sensitivity of the beam
 model at every time of day.
 

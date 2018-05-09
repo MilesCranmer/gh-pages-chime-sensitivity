@@ -125,6 +125,17 @@ also add the temperatures later.</p>
 <span class="n">snr_multiplier</span><span class="o">*=</span><span class="n">projection</span>
 </pre></div>
 </div>
+<p>Next, we use data from the L1 injection trials to estimate
+the loss in signal to noise:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">snr_loss</span> <span class="o">=</span> <span class="n">simulate_l1_loss</span><span class="p">(</span><span class="n">width</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;ms&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">dm</span><span class="p">)</span>
+<span class="n">snr_multiplier</span><span class="o">*=</span> <span class="n">snr_loss</span>
+</pre></div>
+</div>
+<p>Note that as the function <cite>simulate_l1_loss</cite> expects
+floats rather than <cite>astropy</cite> quantities, we had
+to convert the <cite>width</cite> variable to a plain float
+in terms of milliseconds. DM was already in the proper
+format.</p>
 <p>After this, we calculate the sensitivity of the beam
 model at every time of day.</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
