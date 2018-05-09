@@ -25,7 +25,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="2. common_pulsars module" href="common_pulsars.html" />
-    <link rel="prev" title="Welcome to chime-sensitivity’s documentation!" href="index.html" />
+    <link rel="prev" title="2. Estimating the SNR of a pulsar" href="snr_estimation.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -43,6 +43,7 @@
             
   <div class="section" id="module-snr_estimator">
 <span id="snr-estimator-module"></span><h1>1. snr_estimator module<a class="headerlink" href="#module-snr_estimator" title="Permalink to this headline">¶</a></h1>
+<p>Provide functions to estimate CHIME’s SNR to events</p>
 <dl class="function">
 <dt id="snr_estimator.estimate_n_events">
 <code class="descclassname">snr_estimator.</code><code class="descname">estimate_n_events</code><span class="sig-paren">(</span><em>snr_lightcurve</em>, <em>resolution_minutes</em>, <em>period</em>, <em>snr_threshold=10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snr_estimator.html#estimate_n_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snr_estimator.estimate_n_events" title="Permalink to this definition">¶</a></dt>
@@ -94,7 +95,7 @@ at each frequency given. This is of shape (F,).</dd>
 <dd>The right ascension of the event in the sky in decimal hours.</dd>
 <dt>dec <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
 <dd>The declination of the event in the sky in decimal degrees.</dd>
-<dt>beams <span class="classifier-delimiter">:</span> <span class="classifier">array_like </span></dt>
+<dt>beams <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
 <dd>Integer list indicating which beams are used. The
 maximum SNR is chosen at each time sample over all beams.</dd>
 <dt>beam_centers <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
@@ -137,7 +138,7 @@ for a specific pulsar from the ATNF</p>
 <dd>The number of frequency samples between
 400 and 800 MHz to sample from. Higher
 means more accurate but more computation.</dd>
-<dt>beams <span class="classifier-delimiter">:</span> <span class="classifier">array_like </span></dt>
+<dt>beams <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
 <dd>Integer list indicating which beams are used. The
 maximum SNR is chosen at each time sample over all beams.</dd>
 <dt>beam_centers <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
@@ -157,7 +158,7 @@ The default is 2 minutes.</dd>
 <dl class="docutils">
 <dt>array_like</dt>
 <dd>Array of shape (T, F), where T is the number of time
-samples, and F is the number of frequencies past. Each
+samples, and F is the number of frequencies passed. Each
 datapoint represents the expectation SNR of pulses at
 that point in time.</dd>
 </dl>
@@ -208,6 +209,24 @@ shape (X,) at each value of x.</dd>
 </dl>
 </dd></dl>
 
+<dl class="function">
+<dt id="snr_estimator.simulate_l1_loss">
+<code class="descclassname">snr_estimator.</code><code class="descname">simulate_l1_loss</code><span class="sig-paren">(</span><em>width</em>, <em>dm</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/snr_estimator.html#simulate_l1_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#snr_estimator.simulate_l1_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use injection data from l1 injection trials
+to simulate the loss in SNR.</p>
+<dl class="docutils">
+<dt>width <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The width of the burst in ms. NOT an astropy.units.Quantity.</dd>
+<dt>dm <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>The DM of the burst in pc/cm^3.</dd>
+</dl>
+<dl class="docutils">
+<dt>float</dt>
+<dd>The proportional loss in SNR. I.e., a 0.8 means
+the SNR estimation should be multiplied by 0.8.</dd>
+</dl>
+</dd></dl>
+
 </div>
 
 
@@ -226,6 +245,10 @@ shape (X,) at each value of x.</dd>
 
 
 <h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="snr_estimation.html">2. Estimating the SNR of a pulsar</a></li>
+</ul>
 <p class="caption"><span class="caption-text">Primary modules</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">1. snr_estimator module</a></li>
@@ -240,13 +263,14 @@ shape (X,) at each value of x.</dd>
 <li class="toctree-l1"><a class="reference internal" href="known_source_viewing.html">4. known_source_viewing module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="load_beam_centers.html">5. load_beam_centers module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reduce_atnf_cat.html">6. reduce_atnf_cat module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="l1_injection_data_reduction.html">7. l1_injection_data_reduction module</a></li>
 </ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="index.html" title="previous chapter">Welcome to chime-sensitivity’s documentation!</a></li>
+      <li>Previous: <a href="snr_estimation.html" title="previous chapter">2. Estimating the SNR of a pulsar</a></li>
       <li>Next: <a href="common_pulsars.html" title="next chapter">2. common_pulsars module</a></li>
   </ul></li>
 </ul>

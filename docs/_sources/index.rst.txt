@@ -42,6 +42,7 @@ Function python reference:
    known_source_viewing
    load_beam_centers
    reduce_atnf_cat
+   l1_injection_data_reduction
 
 Quick-start installation requirements:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

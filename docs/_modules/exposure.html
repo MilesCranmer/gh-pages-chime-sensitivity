@@ -40,7 +40,13 @@
           <div class="body" role="main">
             
   <h1>Source code for exposure</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot; Functions for exposure mapping &quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot; Functions for mapping CHIME&#39;s beam sensitivity</span>
+
+<span class="sd">- Referencing thesis.pdf, this file is used to calculate</span>
+<span class="sd">  :math:`alpha`, the beam sensitivity. This file calculates</span>
+<span class="sd">  it over a time range to a given point or range of points.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">ephem</span>
 <span class="kn">import</span> <span class="nn">datetime</span>
@@ -556,6 +562,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../known_source_viewing.html">4. known_source_viewing module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../load_beam_centers.html">5. load_beam_centers module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../reduce_atnf_cat.html">6. reduce_atnf_cat module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../l1_injection_data_reduction.html">7. l1_injection_data_reduction module</a></li>
 </ul>
 
 <div class="relations">

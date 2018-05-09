@@ -43,7 +43,12 @@
             
   <div class="section" id="module-exposure">
 <span id="exposure-module"></span><h1>3. exposure module<a class="headerlink" href="#module-exposure" title="Permalink to this headline">¶</a></h1>
-<p>Functions for exposure mapping</p>
+<p>Functions for mapping CHIME’s beam sensitivity</p>
+<ul class="simple">
+<li>Referencing thesis.pdf, this file is used to calculate
+<span class="math">\(alpha\)</span>, the beam sensitivity. This file calculates
+it over a time range to a given point or range of points.</li>
+</ul>
 <dl class="function">
 <dt id="exposure.exposure_lightcurve">
 <code class="descclassname">exposure.</code><code class="descname">exposure_lightcurve</code><span class="sig-paren">(</span><em>ra_degree</em>, <em>dec_degree</em>, <em>start_date</em>, <em>end_date</em>, <em>resolution</em>, <em>beam_ids</em>, <em>frequencies</em>, <em>beam_positions=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/exposure.html#exposure_lightcurve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#exposure.exposure_lightcurve" title="Permalink to this definition">¶</a></dt>
@@ -272,6 +277,10 @@ of an object on the sky</dd>
 
 
 <h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="snr_estimation.html">2. Estimating the SNR of a pulsar</a></li>
+</ul>
 <p class="caption"><span class="caption-text">Primary modules</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="snr_estimator.html">1. snr_estimator module</a></li>
@@ -286,6 +295,7 @@ of an object on the sky</dd>
 <li class="toctree-l1"><a class="reference internal" href="known_source_viewing.html">4. known_source_viewing module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="load_beam_centers.html">5. load_beam_centers module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reduce_atnf_cat.html">6. reduce_atnf_cat module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="l1_injection_data_reduction.html">7. l1_injection_data_reduction module</a></li>
 </ul>
 
 <div class="relations">

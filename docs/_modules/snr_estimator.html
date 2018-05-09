@@ -40,10 +40,12 @@
           <div class="body" role="main">
             
   <h1>Source code for snr_estimator</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span></span><span class="sd">&quot;&quot;&quot; Provide functions to estimate CHIME&#39;s SNR to events &quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">cPickle</span> <span class="k">as</span> <span class="nn">pkl</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span> <span class="k">as</span> <span class="n">copy</span>
 <span class="kn">from</span> <span class="nn">astropy</span> <span class="k">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
 <span class="kn">from</span> <span class="nn">exposure</span> <span class="k">import</span> <span class="n">exposure_lightcurve</span>
@@ -74,7 +76,7 @@
 
 <span class="sd">    resolution_minutes : float</span>
 <span class="sd">        The number of minutes between each datapoint</span>
-<span class="sd">        in snr_lightcurve. </span>
+<span class="sd">        in snr_lightcurve.</span>
 
 <span class="sd">    period : astropy.units.Quantity (float)</span>
 <span class="sd">        The period of the pulsar in units of time.</span>
@@ -128,11 +130,11 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Estimate a function using linear interpolation</span>
 <span class="sd">    using two reference points: (x0, y0), and (x1, y1).</span>
-<span class="sd">    </span>
+
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    </span>
+
 <span class="sd">    x : array_like</span>
 <span class="sd">        Values of the function to estimate</span>
 <span class="sd">        from the linear interpolation. Of shape</span>
@@ -158,7 +160,7 @@
 <span class="sd">    array_like</span>
 <span class="sd">        Estimated values of the function of</span>
 <span class="sd">        shape (X,) at each value of x.</span>
-<span class="sd">        </span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">y0</span> <span class="o">+</span> <span class="p">(</span><span class="n">y1</span><span class="o">-</span><span class="n">y0</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">x0</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">x1</span><span class="o">-</span><span class="n">x0</span><span class="p">)</span></div>
 
@@ -187,15 +189,15 @@
 <span class="sd">        The number of frequency samples between</span>
 <span class="sd">        400 and 800 MHz to sample from. Higher</span>
 <span class="sd">        means more accurate but more computation.</span>
-<span class="sd">        </span>
-<span class="sd">    beams : array_like </span>
+
+<span class="sd">    beams : array_like</span>
 <span class="sd">        Integer list indicating which beams are used. The</span>
 <span class="sd">        maximum SNR is chosen at each time sample over all beams.</span>
 
 <span class="sd">    beam_centers : array_like</span>
 <span class="sd">        Of shape (256,) indicating the centers of each beam. The</span>
 <span class="sd">        default is to use the ones defined in</span>
-<span class="sd">        load_beam_centers.get_beam_centers. </span>
+<span class="sd">        load_beam_centers.get_beam_centers.</span>
 
 <span class="sd">    start_date : datetime.datetime</span>
 <span class="sd">        The starting time of the SNR lightcurve. Default</span>
@@ -214,7 +216,7 @@
 
 <span class="sd">    array_like</span>
 <span class="sd">        Array of shape (T, F), where T is the number of time</span>
-<span class="sd">        samples, and F is the number of frequencies past. Each</span>
+<span class="sd">        samples, and F is the number of frequencies passed. Each</span>
 <span class="sd">        datapoint represents the expectation SNR of pulses at</span>
 <span class="sd">        that point in time.</span>
 
@@ -304,14 +306,14 @@
 <span class="sd">    dec : float</span>
 <span class="sd">        The declination of the event in the sky in decimal degrees.</span>
 
-<span class="sd">    beams : array_like </span>
+<span class="sd">    beams : array_like</span>
 <span class="sd">        Integer list indicating which beams are used. The</span>
 <span class="sd">        maximum SNR is chosen at each time sample over all beams.</span>
 
 <span class="sd">    beam_centers : array_like</span>
 <span class="sd">        Of shape (256,) indicating the centers of each beam. The</span>
 <span class="sd">        default is to use the ones defined in</span>
-<span class="sd">        load_beam_centers.get_beam_centers. </span>
+<span class="sd">        load_beam_centers.get_beam_centers.</span>
 
 <span class="sd">    start_date : datetime.datetime</span>
 <span class="sd">        The starting time of the SNR lightcurve. Default</span>
@@ -357,7 +359,10 @@
 
     <span class="c1">#TODO: Use great circle angle in the projection</span>
     <span class="n">projection</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">((</span><span class="mf">49.5</span><span class="o">-</span><span class="n">dec_injection</span><span class="p">)</span><span class="o">/</span><span class="mf">180.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
-    <span class="n">snr_multiplier</span> <span class="o">=</span> <span class="p">(</span><span class="n">CHIME_GAIN</span><span class="o">*</span><span class="n">fluxes</span><span class="o">*</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">width</span><span class="o">*</span><span class="n">CHIME_BANDWIDTH</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">0.5</span><span class="p">))</span><span class="o">.</span><span class="n">si</span><span class="o">*</span><span class="n">projection</span>
+
+    <span class="n">snr_multiplier</span> <span class="o">=</span> <span class="p">(</span><span class="n">CHIME_GAIN</span><span class="o">*</span><span class="n">fluxes</span><span class="o">*</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">width</span><span class="o">*</span><span class="n">CHIME_BANDWIDTH</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">0.5</span><span class="p">))</span><span class="o">.</span><span class="n">si</span>
+    <span class="n">snr_multiplier</span> <span class="o">*=</span> <span class="n">projection</span>
+    <span class="n">snr_multiplier</span> <span class="o">*=</span> <span class="n">simulate_l1_loss</span><span class="p">(</span><span class="n">width</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;ms&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">dm</span><span class="p">)</span>
 
     <span class="n">lightcurve</span> <span class="o">=</span> <span class="n">exposure_lightcurve</span><span class="p">(</span>
         <span class="n">ra_injection</span><span class="p">,</span>
@@ -379,6 +384,39 @@
 
     <span class="c1"># Return lightcurve SNR</span>
     <span class="k">return</span> <span class="n">total_lightcurve</span><span class="o">.</span><span class="n">value</span></div>
+
+<div class="viewcode-block" id="simulate_l1_loss"><a class="viewcode-back" href="../snr_estimator.html#snr_estimator.simulate_l1_loss">[docs]</a><span class="k">def</span> <span class="nf">simulate_l1_loss</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">dm</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Use injection data from l1 injection trials</span>
+<span class="sd">    to simulate the loss in SNR.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    width : float</span>
+<span class="sd">        The width of the burst in ms. NOT an astropy.units.Quantity.</span>
+
+<span class="sd">    dm : float</span>
+<span class="sd">        The DM of the burst in pc/cm^3.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    float</span>
+<span class="sd">        The proportional loss in SNR. I.e., a 0.8 means</span>
+<span class="sd">        the SNR estimation should be multiplied by 0.8.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">smoothed_injection_data</span> <span class="o">=</span> <span class="n">pkl</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s1">&#39;data/injections.pkl&#39;</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">))</span>
+    <span class="n">dm_coords</span> <span class="o">=</span> <span class="n">smoothed_injection_data</span><span class="p">[</span><span class="s1">&#39;xcoords&#39;</span><span class="p">]</span>
+    <span class="n">width_coords</span> <span class="o">=</span> <span class="n">smoothed_injection_data</span><span class="p">[</span><span class="s1">&#39;ycoords&#39;</span><span class="p">]</span>
+    <span class="n">snr_loss</span> <span class="o">=</span> <span class="n">smoothed_injection_data</span><span class="p">[</span><span class="s1">&#39;grid&#39;</span><span class="p">]</span>
+
+    <span class="n">dm_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dm_coords</span><span class="o">-</span><span class="n">dm</span><span class="p">)</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+    <span class="n">width_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">width_coords</span><span class="o">-</span><span class="n">width</span><span class="p">)</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+
+    <span class="c1">#snr_loss has shape width, dm</span>
+    <span class="k">return</span> <span class="n">snr_loss</span><span class="p">[</span><span class="n">width_idx</span><span class="p">,</span> <span class="n">dm_idx</span><span class="p">]</span></div>
 </pre></div>
 
           </div>
@@ -414,6 +452,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../known_source_viewing.html">4. known_source_viewing module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../load_beam_centers.html">5. load_beam_centers module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../reduce_atnf_cat.html">6. reduce_atnf_cat module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../l1_injection_data_reduction.html">7. l1_injection_data_reduction module</a></li>
 </ul>
 
 <div class="relations">
