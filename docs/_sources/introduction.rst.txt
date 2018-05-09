@@ -16,6 +16,8 @@ Pulsar SNR
 
 For the first example, let us estimate the maximum SNR
 of a pulsar, and change the settings to add a bandpass attenuation.
+Before we do this however, you should run `python generate_atnf_readable_cat`
+to generate the ATNF catalog.
 Create a new file in the same folder as the sensitivity code.
 Now, let's download a pulsar as a Python dictionary:
 
